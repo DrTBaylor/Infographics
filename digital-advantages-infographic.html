@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital vs Analog: Shannon's Revolution</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a12;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #e0e0e0;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 38px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        
+        .header h1 span {
+            color: #4ecdc4;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            color: #888;
+        }
+        
+        /* Main content area */
+        .main-content {
+            display: flex;
+            gap: 25px;
+            flex: 1;
+        }
+        
+        /* Left column - The Puzzle & Shannon */
+        .left-column {
+            width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* The Puzzle Section */
+        .puzzle-section {
+            background: linear-gradient(135deg, #1e1e32 0%, #252540 100%);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        
+        .puzzle-section h2 {
+            font-size: 18px;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .puzzle-section h2::before {
+            content: "?";
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            background: #ff6b6b;
+            color: #1e1e32;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        /* Bandwidth comparison visualization */
+        .bandwidth-compare {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .bw-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .bw-label {
+            width: 80px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        
+        .bw-bar-container {
+            flex: 1;
+            height: 24px;
+            background: #1a1a2a;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bw-bar {
+            height: 100%;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: width 0.8s ease;
+        }
+        
+        .bw-analog {
+            width: 25%;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            color: #fff;
+        }
+        
+        .bw-digital {
+            width: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+        }
+        
+        .puzzle-question {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 10px;
+            border-left: 3px solid #ff6b6b;
+            font-size: 14px;
+            color: #ddd;
+            font-style: italic;
+        }
+        
+        /* Shannon Section */
+        .shannon-section {
+            background: linear-gradient(135deg, #1a2a3a 0%, #1e3a4a 100%);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #2a4a5a;
+            flex: 1;
+        }
+        
+        .shannon-section h2 {
+            font-size: 18px;
+            color: #4ecdc4;
+            margin-bottom: 6px;
+        }
+        
+        .shannon-year {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+        
+        .shannon-insight {
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .shannon-quote {
+            font-size: 15px;
+            color: #e0e0e0;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        
+        .shannon-keys {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .shannon-key {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .key-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .key-compress .key-icon {
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+        }
+        
+        .key-protect .key-icon {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+        
+        .key-text h4 {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+        
+        .key-text p {
+            font-size: 12px;
+            color: #aaa;
+            line-height: 1.4;
+        }
+        
+        .shannon-result {
+            padding: 12px;
+            background: rgba(78, 205, 196, 0.15);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #4ecdc4;
+            font-weight: 500;
+        }
+        
+        /* Center column - Advantages */
+        .center-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .advantages-header {
+            font-size: 20px;
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .advantages-header::before {
+            content: "✓";
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            background: #4ecdc4;
+            color: #1e1e32;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .advantages-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .advantage-card {
+            background: linear-gradient(135deg, #1e1e32 0%, #252545 100%);
+            border-radius: 14px;
+            padding: 18px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .advantage-card:hover {
+            border-color: #4ecdc4;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.2);
+        }
+        
+        .advantage-card.active {
+            border-color: #4ecdc4;
+            background: linear-gradient(135deg, #1a2a35 0%, #1e3545 100%);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        
+        .card-regen .card-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .card-copy .card-icon { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .card-compress .card-icon { background: linear-gradient(135deg, #ec4899, #db2777); }
+        .card-error .card-icon { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .card-flex .card-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        
+        .card-header h3 {
+            font-size: 16px;
+            color: #fff;
+        }
+        
+        .card-desc {
+            font-size: 13px;
+            color: #999;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+        
+        .card-visual {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100px;
+        }
+        
+        /* Regeneration visualization */
+        .regen-demo {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .regen-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }
+        
+        .regen-label {
+            width: 50px;
+            color: #888;
+        }
+        
+        .regen-hops {
+            display: flex;
+            gap: 3px;
+            flex: 1;
+        }
+        
+        .regen-hop {
+            flex: 1;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .regen-analog .regen-hop:nth-child(1) { background: #4ecdc4; }
+        .regen-analog .regen-hop:nth-child(2) { background: #45b8b0; }
+        .regen-analog .regen-hop:nth-child(3) { background: #3ca39c; }
+        .regen-analog .regen-hop:nth-child(4) { background: #338e88; }
+        .regen-analog .regen-hop:nth-child(5) { background: #2a7974; opacity: 0.9; }
+        .regen-analog .regen-hop:nth-child(6) { background: #216460; opacity: 0.8; }
+        .regen-analog .regen-hop:nth-child(7) { background: #185550; opacity: 0.7; }
+        .regen-analog .regen-hop:nth-child(8) { background: #104540; opacity: 0.6; }
+        
+        .regen-digital .regen-hop { background: #3b82f6; }
+        
+        .regen-result {
+            font-size: 10px;
+            color: #888;
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        /* Perfect copies visual */
+        .copy-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .copy-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .copy-icon {
+            font-size: 28px;
+        }
+        
+        .copy-label {
+            font-size: 10px;
+            color: #888;
+        }
+        
+        .copy-quality {
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .copy-quality.perfect { color: #4ecdc4; }
+        .copy-quality.degraded { color: #ff6b6b; }
+        
+        .copy-arrow {
+            font-size: 18px;
+            color: #555;
+        }
+        
+        /* Compression visual */
+        .compress-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .compress-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .compress-label {
+            width: 70px;
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .compress-bar-bg {
+            flex: 1;
+            height: 18px;
+            background: #1a1a2a;
+            border-radius: 9px;
+            overflow: hidden;
+        }
+        
+        .compress-bar {
+            height: 100%;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            padding-left: 8px;
+            font-size: 10px;
+            color: #fff;
+        }
+        
+        .compress-pcm { width: 100%; background: linear-gradient(90deg, #ff6b6b, #ee5a5a); }
+        .compress-modern { width: 15%; background: linear-gradient(90deg, #22c55e, #16a34a); }
+        .compress-analog { width: 25%; background: linear-gradient(90deg, #4ecdc4, #44a08d); }
+        
+        /* Error correction visual */
+        .error-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .error-bits {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .error-bit {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        .bit-ok { background: #22c55e; color: #fff; }
+        .bit-error { background: #ff6b6b; color: #fff; }
+        .bit-fixed { background: #22c55e; color: #fff; border: 2px solid #fff; }
+        
+        .error-label {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .error-arrow {
+            font-size: 16px;
+            color: #22c55e;
+        }
+        
+        /* Flexibility visual */
+        .flex-visual {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .flex-item {
+            padding: 6px 12px;
+            background: rgba(245, 158, 11, 0.2);
+            border-radius: 15px;
+            font-size: 11px;
+            color: #f59e0b;
+        }
+        
+        /* Right column - Tradeoffs */
+        .right-column {
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tradeoffs-header {
+            font-size: 20px;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tradeoffs-header::before {
+            content: "⚖";
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            background: #ff6b6b;
+            color: #1e1e32;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .tradeoffs-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .tradeoff-card {
+            background: linear-gradient(135deg, #2a1a1a 0%, #351e1e 100%);
+            border-radius: 14px;
+            padding: 16px;
+            border: 1px solid #442222;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tradeoff-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .tradeoff-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .tradeoff-header h3 {
+            font-size: 15px;
+            color: #ff8a8a;
+        }
+        
+        .tradeoff-desc {
+            font-size: 12px;
+            color: #999;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        
+        .tradeoff-visual {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Quantization visual */
+        .quant-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .quant-wave {
+            width: 100%;
+            height: 50px;
+            position: relative;
+        }
+        
+        .quant-wave svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .quant-label {
+            font-size: 10px;
+            color: #888;
+        }
+        
+        /* Latency visual */
+        .latency-visual {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .latency-step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .latency-box {
+            width: 100%;
+            padding: 8px 4px;
+            background: rgba(255, 107, 107, 0.2);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 10px;
+            color: #ff8a8a;
+        }
+        
+        .latency-arrow {
+            color: #555;
+            font-size: 14px;
+        }
+        
+        /* Cliff effect visual */
+        .cliff-visual {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .cliff-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .cliff-label {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .cliff-bars {
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+            height: 40px;
+        }
+        
+        .cliff-bar {
+            width: 12px;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .cliff-analog .cliff-bar:nth-child(1) { height: 40px; background: #4ecdc4; }
+        .cliff-analog .cliff-bar:nth-child(2) { height: 35px; background: #45b8b0; }
+        .cliff-analog .cliff-bar:nth-child(3) { height: 30px; background: #3ca39c; }
+        .cliff-analog .cliff-bar:nth-child(4) { height: 25px; background: #338e88; }
+        .cliff-analog .cliff-bar:nth-child(5) { height: 20px; background: #2a7974; }
+        
+        .cliff-digital .cliff-bar:nth-child(1) { height: 40px; background: #3b82f6; }
+        .cliff-digital .cliff-bar:nth-child(2) { height: 40px; background: #3b82f6; }
+        .cliff-digital .cliff-bar:nth-child(3) { height: 40px; background: #3b82f6; }
+        .cliff-digital .cliff-bar:nth-child(4) { height: 8px; background: #ff6b6b; }
+        .cliff-digital .cliff-bar:nth-child(5) { height: 4px; background: #ff6b6b; }
+        
+        .cliff-desc {
+            font-size: 9px;
+            color: #777;
+            text-align: center;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-left {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .footer-right {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .stat-dot.analog { background: #4ecdc4; }
+        .stat-dot.digital { background: #3b82f6; }
+        
+        .stat-text {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        /* Detail panel overlay */
+        .detail-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 18, 0.95);
+            z-index: 100;
+            padding: 60px;
+            flex-direction: column;
+        }
+        
+        .detail-overlay.active {
+            display: flex;
+        }
+        
+        .detail-close {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #333;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .detail-close:hover {
+            background: #ff6b6b;
+        }
+        
+        .detail-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .detail-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+        
+        .detail-title h2 {
+            font-size: 36px;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        
+        .detail-title p {
+            font-size: 18px;
+            color: #888;
+        }
+        
+        .detail-main {
+            flex: 1;
+            display: flex;
+            gap: 50px;
+        }
+        
+        .detail-explanation {
+            flex: 1;
+            font-size: 18px;
+            color: #ccc;
+            line-height: 1.7;
+        }
+        
+        .detail-explanation p {
+            margin-bottom: 20px;
+        }
+        
+        .detail-visualization {
+            flex: 1;
+            background: rgba(30, 30, 50, 0.5);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        /* Regeneration detail animation */
+        .regen-detail-demo {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .regen-detail-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .regen-detail-label {
+            width: 100px;
+            font-size: 16px;
+            color: #888;
+        }
+        
+        .regen-detail-signal {
+            flex: 1;
+            height: 60px;
+            position: relative;
+        }
+        
+        .regen-detail-signal svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .wave-clean {
+            stroke: #4ecdc4;
+            stroke-width: 3;
+            fill: none;
+        }
+        
+        .wave-degraded {
+            stroke: #ff6b6b;
+            stroke-width: 3;
+            fill: none;
+        }
+        
+        .wave-digital {
+            stroke: #3b82f6;
+            stroke-width: 3;
+            fill: none;
+        }
+        
+        .repeater-icon {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .detail-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 10px;
+            font-size: 14px;
+            color: #4ecdc4;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <!-- Header -->
+            <div class="header">
+                <h1>Digital vs Analog: <span>Shannon's Revolution</span></h1>
+                <div class="subtitle">Why digital conquered communications despite seeming "wasteful"</div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Left Column -->
+                <div class="left-column">
+                    <!-- The Puzzle -->
+                    <div class="puzzle-section">
+                        <h2>The Puzzle</h2>
+                        <div class="bandwidth-compare">
+                            <div class="bw-item">
+                                <div class="bw-label">Analog Voice</div>
+                                <div class="bw-bar-container">
+                                    <div class="bw-bar bw-analog">4 kHz</div>
+                                </div>
+                            </div>
+                            <div class="bw-item">
+                                <div class="bw-label">Raw PCM</div>
+                                <div class="bw-bar-container">
+                                    <div class="bw-bar bw-digital">64 kbps</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="puzzle-question">
+                            "If digital needs 4× more bandwidth, why would anyone use it?"
+                        </div>
+                    </div>
+                    
+                    <!-- Shannon's Insight -->
+                    <div class="shannon-section">
+                        <h2>Claude Shannon's Answer</h2>
+                        <div class="shannon-year">1948 — "A Mathematical Theory of Communication"</div>
+                        
+                        <div class="shannon-insight">
+                            <div class="shannon-quote">
+                                Shannon proved that any channel has a maximum capacity for reliable communication — and showed how to approach it.
+                            </div>
+                        </div>
+                        
+                        <div class="shannon-keys">
+                            <div class="shannon-key key-compress">
+                                <div class="key-icon">📦</div>
+                                <div class="key-text">
+                                    <h4>Compression</h4>
+                                    <p>Remove redundancy from the source. Speech is predictable — exploit that!</p>
+                                </div>
+                            </div>
+                            <div class="shannon-key key-protect">
+                                <div class="key-icon">🛡️</div>
+                                <div class="key-text">
+                                    <h4>Error Correction</h4>
+                                    <p>Add strategic redundancy back. Detect and fix transmission errors.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="shannon-result">
+                            Together: Digital can be both efficient AND reliable
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center Column - Advantages -->
+                <div class="center-column">
+                    <div class="advantages-header">Digital Advantages</div>
+                    <div class="advantages-grid">
+                        <!-- Regeneration -->
+                        <div class="advantage-card card-regen" data-detail="regen">
+                            <div class="card-header">
+                                <div class="card-icon">🔄</div>
+                                <h3>Regeneration</h3>
+                            </div>
+                            <div class="card-desc">Signal restored perfectly at each repeater — no noise accumulation</div>
+                            <div class="card-visual">
+                                <div class="regen-demo">
+                                    <div class="regen-row regen-analog">
+                                        <div class="regen-label">Analog</div>
+                                        <div class="regen-hops">
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                        </div>
+                                    </div>
+                                    <div class="regen-row regen-digital">
+                                        <div class="regen-label">Digital</div>
+                                        <div class="regen-hops">
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                            <div class="regen-hop"></div>
+                                        </div>
+                                    </div>
+                                    <div class="regen-result">Signal quality after 8 repeater hops</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Perfect Copies -->
+                        <div class="advantage-card card-copy" data-detail="copy">
+                            <div class="card-header">
+                                <div class="card-icon">📋</div>
+                                <h3>Perfect Copies</h3>
+                            </div>
+                            <div class="card-desc">No generation loss — copy of a copy is identical to original</div>
+                            <div class="card-visual">
+                                <div class="copy-visual">
+                                    <div class="copy-item">
+                                        <div class="copy-icon">📄</div>
+                                        <div class="copy-label">Original</div>
+                                    </div>
+                                    <div class="copy-arrow">→</div>
+                                    <div class="copy-item">
+                                        <div class="copy-icon">📄</div>
+                                        <div class="copy-label">Copy 10</div>
+                                        <div class="copy-quality perfect">100%</div>
+                                    </div>
+                                    <div class="copy-arrow">→</div>
+                                    <div class="copy-item">
+                                        <div class="copy-icon">📄</div>
+                                        <div class="copy-label">Copy 100</div>
+                                        <div class="copy-quality perfect">100%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Compression -->
+                        <div class="advantage-card card-compress" data-detail="compress">
+                            <div class="card-header">
+                                <div class="card-icon">📦</div>
+                                <h3>Compression</h3>
+                            </div>
+                            <div class="card-desc">Modern codecs use less bandwidth than analog!</div>
+                            <div class="card-visual">
+                                <div class="compress-visual">
+                                    <div class="compress-row">
+                                        <div class="compress-label">Raw PCM</div>
+                                        <div class="compress-bar-bg">
+                                            <div class="compress-bar compress-pcm">64 kbps</div>
+                                        </div>
+                                    </div>
+                                    <div class="compress-row">
+                                        <div class="compress-label">Analog</div>
+                                        <div class="compress-bar-bg">
+                                            <div class="compress-bar compress-analog"></div>
+                                        </div>
+                                    </div>
+                                    <div class="compress-row">
+                                        <div class="compress-label">Modern</div>
+                                        <div class="compress-bar-bg">
+                                            <div class="compress-bar compress-modern">~10 kbps</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Error Correction -->
+                        <div class="advantage-card card-error" data-detail="error">
+                            <div class="card-header">
+                                <div class="card-icon">🛡️</div>
+                                <h3>Error Correction</h3>
+                            </div>
+                            <div class="card-desc">Detect and fix transmission errors automatically</div>
+                            <div class="card-visual">
+                                <div class="error-visual">
+                                    <div class="error-label">Transmitted</div>
+                                    <div class="error-bits">
+                                        <div class="error-bit bit-ok">1</div>
+                                        <div class="error-bit bit-ok">0</div>
+                                        <div class="error-bit bit-error">0</div>
+                                        <div class="error-bit bit-ok">1</div>
+                                        <div class="error-bit bit-ok">1</div>
+                                        <div class="error-bit bit-ok">0</div>
+                                    </div>
+                                    <div class="error-arrow">↓ corrected</div>
+                                    <div class="error-bits">
+                                        <div class="error-bit bit-ok">1</div>
+                                        <div class="error-bit bit-ok">0</div>
+                                        <div class="error-bit bit-fixed">1</div>
+                                        <div class="error-bit bit-ok">1</div>
+                                        <div class="error-bit bit-ok">1</div>
+                                        <div class="error-bit bit-ok">0</div>
+                                    </div>
+                                    <div class="error-label">Recovered</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Flexibility -->
+                        <div class="advantage-card card-flex" data-detail="flex" style="grid-column: span 2;">
+                            <div class="card-header">
+                                <div class="card-icon">⚡</div>
+                                <h3>Flexibility</h3>
+                            </div>
+                            <div class="card-desc">Once it's bits, you can do anything with it</div>
+                            <div class="card-visual">
+                                <div class="flex-visual">
+                                    <div class="flex-item">🔐 Encrypt</div>
+                                    <div class="flex-item">📊 Multiplex</div>
+                                    <div class="flex-item">💾 Store</div>
+                                    <div class="flex-item">🔀 Route</div>
+                                    <div class="flex-item">⚙️ Process</div>
+                                    <div class="flex-item">🔍 Search</div>
+                                    <div class="flex-item">📡 Broadcast</div>
+                                    <div class="flex-item">🌐 Network</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Tradeoffs -->
+                <div class="right-column">
+                    <div class="tradeoffs-header">Honest Tradeoffs</div>
+                    <div class="tradeoffs-container">
+                        <!-- Quantization -->
+                        <div class="tradeoff-card">
+                            <div class="tradeoff-header">
+                                <div class="tradeoff-icon">📉</div>
+                                <h3>Quantization Noise</h3>
+                            </div>
+                            <div class="tradeoff-desc">Some information is always lost when converting to discrete levels</div>
+                            <div class="tradeoff-visual">
+                                <div class="quant-visual">
+                                    <div class="quant-wave">
+                                        <svg viewBox="0 0 200 50">
+                                            <!-- Smooth analog wave -->
+                                            <path d="M0,25 Q25,5 50,25 T100,25 T150,25 T200,25" stroke="#4ecdc4" stroke-width="2" fill="none" opacity="0.5"/>
+                                            <!-- Quantized steps -->
+                                            <path d="M0,25 L10,25 L10,15 L30,15 L30,10 L50,10 L50,15 L70,15 L70,25 L90,25 L90,35 L110,35 L110,40 L130,40 L130,35 L150,35 L150,25 L170,25 L170,15 L190,15 L190,25 L200,25" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                                        </svg>
+                                    </div>
+                                    <div class="quant-label">Smooth curve → discrete steps = some loss</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Latency -->
+                        <div class="tradeoff-card">
+                            <div class="tradeoff-header">
+                                <div class="tradeoff-icon">⏱️</div>
+                                <h3>Latency</h3>
+                            </div>
+                            <div class="tradeoff-desc">Encoding and decoding take time</div>
+                            <div class="tradeoff-visual">
+                                <div class="latency-visual">
+                                    <div class="latency-step">
+                                        <div class="latency-box">Encode</div>
+                                    </div>
+                                    <div class="latency-arrow">→</div>
+                                    <div class="latency-step">
+                                        <div class="latency-box">Transmit</div>
+                                    </div>
+                                    <div class="latency-arrow">→</div>
+                                    <div class="latency-step">
+                                        <div class="latency-box">Decode</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cliff Effect -->
+                        <div class="tradeoff-card">
+                            <div class="tradeoff-header">
+                                <div class="tradeoff-icon">🧱</div>
+                                <h3>Cliff Effect</h3>
+                            </div>
+                            <div class="tradeoff-desc">Works perfectly... until it suddenly doesn't</div>
+                            <div class="tradeoff-visual">
+                                <div class="cliff-visual">
+                                    <div class="cliff-side">
+                                        <div class="cliff-label">Analog</div>
+                                        <div class="cliff-bars cliff-analog">
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                        </div>
+                                        <div class="cliff-desc">Graceful degradation</div>
+                                    </div>
+                                    <div class="cliff-side">
+                                        <div class="cliff-label">Digital</div>
+                                        <div class="cliff-bars cliff-digital">
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                            <div class="cliff-bar"></div>
+                                        </div>
+                                        <div class="cliff-desc">Sudden failure</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-left">Click any advantage card to explore details</div>
+                <div class="footer-right">
+                    <div class="footer-stat">
+                        <div class="stat-dot analog"></div>
+                        <div class="stat-text">Analog</div>
+                    </div>
+                    <div class="footer-stat">
+                        <div class="stat-dot digital"></div>
+                        <div class="stat-text">Digital</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detail Overlay for Regeneration -->
+            <div class="detail-overlay" id="detailRegen">
+                <button class="detail-close" onclick="closeDetail('detailRegen')">×</button>
+                <div class="detail-content">
+                    <div class="detail-header">
+                        <div class="detail-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">🔄</div>
+                        <div class="detail-title">
+                            <h2>Regeneration: The Killer Feature</h2>
+                            <p>Why digital wins for long-distance communication</p>
+                        </div>
+                    </div>
+                    <div class="detail-main">
+                        <div class="detail-explanation">
+                            <p><strong>The fundamental problem:</strong> Every amplifier adds noise. In analog systems, that noise accumulates with each hop. After many repeaters, the signal drowns in accumulated noise.</p>
+                            <p><strong>Digital's solution:</strong> At each repeater, we don't amplify — we <em>regenerate</em>. We ask: "Is this a 0 or a 1?" and transmit a fresh, clean signal. The noise doesn't accumulate.</p>
+                            <p><strong>Real-world impact:</strong> This is why intercontinental fiber optic cables work. A photon traveling 10,000 km would be completely lost without digital regeneration at each repeater station.</p>
+                        </div>
+                        <div class="detail-visualization">
+                            <div class="regen-detail-demo">
+                                <div class="regen-detail-row">
+                                    <div class="regen-detail-label">Analog</div>
+                                    <div class="regen-detail-signal">
+                                        <svg viewBox="0 0 400 60">
+                                            <path class="wave-clean" d="M0,30 Q20,10 40,30 T80,30 T120,30" opacity="0.3"/>
+                                            <text x="130" y="35" fill="#888" font-size="10">amplify</text>
+                                            <path class="wave-degraded" d="M160,30 Q175,15 190,28 T220,32 T250,28" opacity="0.5"/>
+                                            <text x="260" y="35" fill="#888" font-size="10">amplify</text>
+                                            <path class="wave-degraded" d="M290,30 Q300,20 315,35 T340,25 T365,32 T390,28"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div style="text-align: center; color: #ff6b6b; font-size: 14px;">↑ Each hop adds noise — signal degrades</div>
+                                
+                                <div class="regen-detail-row" style="margin-top: 20px;">
+                                    <div class="regen-detail-label">Digital</div>
+                                    <div class="regen-detail-signal">
+                                        <svg viewBox="0 0 400 60">
+                                            <path class="wave-digital" d="M0,45 L0,15 L20,15 L20,45 L40,45 L40,15 L60,15 L60,45 L80,45 L80,15 L100,15 L100,45 L120,45"/>
+                                            <text x="130" y="35" fill="#888" font-size="10">regenerate</text>
+                                            <path class="wave-digital" d="M170,45 L170,15 L190,15 L190,45 L210,45 L210,15 L230,15 L230,45 L250,45 L250,15 L270,15 L270,45 L290,45"/>
+                                            <text x="300" y="35" fill="#888" font-size="10">regenerate</text>
+                                            <path class="wave-digital" d="M340,45 L340,15 L360,15 L360,45 L380,45 L380,15 L400,15"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div style="text-align: center; color: #4ecdc4; font-size: 14px;">↑ Each hop restores perfect signal</div>
+                            </div>
+                            <div class="detail-note">
+                                This is why your voice sounds clear calling across the ocean, but old analog long-distance calls were noisy.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+        
+        // Detail panel functions
+        function openDetail(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        
+        function closeDetail(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        
+        // Card click handlers
+        document.querySelectorAll('.advantage-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const detailType = card.dataset.detail;
+                if (detailType === 'regen') {
+                    openDetail('detailRegen');
+                }
+                // Additional detail panels can be added for other cards
+            });
+        });
+        
+        // Initialize
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+    </script>
+</body>
+</html>
