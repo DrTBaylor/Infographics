@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Lifecycle: When to Start, Continue, or Reset</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0d1117;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            color: #e6edf3;
+            display: flex;
+            padding: 50px 60px;
+        }
+
+        /* Main Layout */
+        .diagram-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding-right: 60px;
+        }
+
+        .sidebar {
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            letter-spacing: -0.5px;
+        }
+
+        .header .subtitle {
+            font-size: 20px;
+            color: #8b949e;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .cards-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        /* State Cards */
+        .state-card {
+            width: 220px;
+            height: 130px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            position: relative;
+            opacity: 0.5;
+            filter: saturate(0.7);
+        }
+
+        .state-card::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 20px;
+            background: transparent;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: -1;
+        }
+
+        .state-card:hover {
+            opacity: 0.75;
+            filter: saturate(0.9);
+            transform: translateY(-4px);
+        }
+
+        /* Active states with alternating colors */
+        .state-card.active-a {
+            opacity: 1;
+            filter: saturate(1);
+            transform: scale(1.12);
+        }
+
+        .state-card.active-a::before {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            box-shadow: 0 0 60px rgba(255, 107, 107, 0.5), 0 0 100px rgba(254, 202, 87, 0.3);
+        }
+
+        .state-card.active-b {
+            opacity: 1;
+            filter: saturate(1);
+            transform: scale(1.12);
+        }
+
+        .state-card.active-b::before {
+            background: linear-gradient(135deg, #4ecdc4, #44a3f1);
+            box-shadow: 0 0 60px rgba(78, 205, 196, 0.5), 0 0 100px rgba(68, 163, 241, 0.3);
+        }
+
+        .state-card .icon {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .state-card .name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .state-card .desc {
+            font-size: 12px;
+            opacity: 0.8;
+            padding: 0 15px;
+            line-height: 1.4;
+        }
+
+        /* State Colors */
+        .state-fresh {
+            background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+            box-shadow: 0 8px 30px rgba(46, 160, 67, 0.2);
+        }
+
+        .state-steer {
+            background: linear-gradient(135deg, #d29922 0%, #e3b341 100%);
+            box-shadow: 0 8px 30px rgba(227, 179, 65, 0.2);
+        }
+
+        .state-continue {
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            box-shadow: 0 8px 30px rgba(56, 139, 253, 0.2);
+        }
+
+        .state-shape {
+            background: linear-gradient(135deg, #a371f7 0%, #bc8cff 100%);
+            box-shadow: 0 8px 30px rgba(163, 113, 247, 0.2);
+        }
+
+        .state-extract {
+            background: linear-gradient(135deg, #8957e5 0%, #a371f7 100%);
+            box-shadow: 0 8px 30px rgba(137, 87, 229, 0.2);
+        }
+
+        /* Sidebar */
+        .sidebar-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .detail-card {
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 16px;
+            padding: 28px;
+            min-height: 500px;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .detail-card.active-a {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.15);
+        }
+
+        .detail-card.active-b {
+            border-color: #4ecdc4;
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.15);
+        }
+
+        .detail-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #8b949e;
+            text-align: center;
+        }
+
+        .detail-placeholder .icon {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 20px;
+            opacity: 0.4;
+        }
+
+        .detail-placeholder p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .detail-content {
+            display: none;
+        }
+
+        .detail-content.active {
+            display: block;
+            animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-content h3 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detail-content h3 .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+        }
+
+        .detail-content h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8b949e;
+            margin: 20px 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-content p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #c9d1d9;
+        }
+
+        .detail-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .detail-content ul li {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #c9d1d9;
+            padding-left: 18px;
+            position: relative;
+            margin-bottom: 6px;
+        }
+
+        .detail-content ul li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #6e7681;
+        }
+
+        .example-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-top: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #8b949e;
+            font-style: italic;
+        }
+
+        /* Quick Reference */
+        .quick-ref {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 16px;
+            padding: 20px 24px;
+        }
+
+        .quick-ref-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 24px;
+            margin-top: 14px;
+        }
+
+        .quick-ref-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #c9d1d9;
+        }
+
+        .quick-ref-item .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-green { background: #2ea043; }
+        .dot-blue { background: #388bfd; }
+        .dot-purple { background: #a371f7; }
+        .dot-violet { background: #8957e5; }
+        .dot-yellow { background: #e3b341; }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <!-- Diagram Section -->
+            <div class="diagram-section">
+                <div class="header">
+                    <h1>The Context Lifecycle</h1>
+                    <p class="subtitle">Strategic decisions for managing conversation context</p>
+                </div>
+
+                <div class="cards-grid">
+                    <!-- Top Row -->
+                    <div class="cards-row">
+                        <div class="state-card state-fresh" data-state="fresh">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <span class="name">Start Fresh</span>
+                            <span class="desc">Begin with clean context</span>
+                        </div>
+                    </div>
+
+                    <!-- Middle Row -->
+                    <div class="cards-row">
+                        <div class="state-card state-steer" data-state="steer">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.4-6.4l-2.8 2.8M9.4 14.6l-2.8 2.8m0-11.2l2.8 2.8m5.6 5.6l2.8 2.8"/>
+                            </svg>
+                            <span class="name">Steer</span>
+                            <span class="desc">Redirect without resetting</span>
+                        </div>
+
+                        <div class="state-card state-continue" data-state="continue">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                            <span class="name">Continue</span>
+                            <span class="desc">Build on shared understanding</span>
+                        </div>
+
+                        <div class="state-card state-shape" data-state="shape">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="4" y1="21" x2="4" y2="14"/>
+                                <line x1="4" y1="10" x2="4" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12" y2="3"/>
+                                <line x1="20" y1="21" x2="20" y2="16"/>
+                                <line x1="20" y1="12" x2="20" y2="3"/>
+                                <line x1="1" y1="14" x2="7" y2="14"/>
+                                <line x1="9" y1="8" x2="15" y2="8"/>
+                                <line x1="17" y1="16" x2="23" y2="16"/>
+                            </svg>
+                            <span class="name">Shape Output</span>
+                            <span class="desc">Transform format & style</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Row -->
+                    <div class="cards-row">
+                        <div class="state-card state-extract" data-state="extract">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span class="name">Extract & Reset</span>
+                            <span class="desc">Save outputs, then restart</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div>
+                    <div class="sidebar-header">Strategy Details</div>
+                    <div class="detail-card" id="detailCard">
+                        <div class="detail-placeholder" id="placeholder">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="16" x2="12" y2="12"/>
+                                <line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            <p>Click a state in the diagram<br>to learn when and how to use it</p>
+                        </div>
+
+                        <!-- Start Fresh Detail -->
+                        <div class="detail-content" id="detail-fresh">
+                            <h3><span class="dot dot-green"></span> Start Fresh</h3>
+                            <h4>What It Means</h4>
+                            <p>Begin a new conversation with zero accumulated context. The model has no history—only system context and memory.</p>
+                            <h4>When to Use</h4>
+                            <ul>
+                                <li>Switching to a completely new topic</li>
+                                <li>Previous conversation became noisy/unfocused</li>
+                                <li>You want a "second opinion" without prior bias</li>
+                                <li>Starting a task that needs fresh perspective</li>
+                            </ul>
+                            <h4>The Action</h4>
+                            <p>Click "New Chat" or use keyboard shortcut. Consider briefly stating relevant context in your first message.</p>
+                            <div class="example-box">
+                                "You've been debugging Python for 20 messages. Now you want help writing a cover letter—start fresh so code context doesn't bleed in."
+                            </div>
+                        </div>
+
+                        <!-- Continue Detail -->
+                        <div class="detail-content" id="detail-continue">
+                            <h3><span class="dot dot-blue"></span> Continue</h3>
+                            <h4>What It Means</h4>
+                            <p>Keep building within the current conversation. Each exchange adds to shared context, creating compounding understanding.</p>
+                            <h4>When to Use</h4>
+                            <ul>
+                                <li>Iterating on the same document or code</li>
+                                <li>Asking follow-up questions on same topic</li>
+                                <li>Refining output through multiple rounds</li>
+                                <li>Context from earlier messages is still relevant</li>
+                            </ul>
+                            <h4>The Action</h4>
+                            <p>Simply send your next message. Reference earlier context naturally: "Now let's..." or "Building on that..."</p>
+                            <div class="example-box">
+                                "You're refining a business proposal. Message 1 drafted it, message 2 adjusted tone, message 3 adds metrics. Each builds on the last."
+                            </div>
+                        </div>
+
+                        <!-- Shape Output Detail -->
+                        <div class="detail-content" id="detail-shape">
+                            <h3><span class="dot dot-purple"></span> Shape Output</h3>
+                            <h4>What It Means</h4>
+                            <p>Transform the output's format, length, or style without changing the underlying content. The substance is right—now make it fit the destination.</p>
+                            <h4>When to Use</h4>
+                            <ul>
+                                <li>Output is correct but wrong format</li>
+                                <li>Need different length (expand/condense)</li>
+                                <li>Tone doesn't match the audience</li>
+                                <li>Converting formats (prose → bullets, etc.)</li>
+                            </ul>
+                            <h4>The Action</h4>
+                            <p>Direct transformation requests: "Reformat as...", "Condense to...", "Make this more...", "Extract just the..."</p>
+                            <div class="example-box">
+                                "This explanation is good but I need it as a numbered checklist I can paste into our team wiki."
+                            </div>
+                        </div>
+
+                        <!-- Extract Detail -->
+                        <div class="detail-content" id="detail-extract">
+                            <h3><span class="dot dot-violet"></span> Extract & Reset</h3>
+                            <h4>What It Means</h4>
+                            <p>Save the valuable outputs from the current conversation, then start fresh. Keep the results while shedding accumulated noise.</p>
+                            <h4>When to Use</h4>
+                            <ul>
+                                <li>Conversation got long and unfocused</li>
+                                <li>Good output buried in messy context</li>
+                                <li>Need to continue with clean slate + summary</li>
+                                <li>Moving to next phase of a project</li>
+                            </ul>
+                            <h4>The Action</h4>
+                            <p>Copy key outputs or ask Claude to summarize. Start new chat and paste the summary as context.</p>
+                            <div class="example-box">
+                                "After 30 messages refining a project plan, copy the final version. Start fresh: 'Here's my project plan. Now help me create the timeline.'"
+                            </div>
+                        </div>
+
+                        <!-- Steer Detail -->
+                        <div class="detail-content" id="detail-steer">
+                            <h3><span class="dot dot-yellow"></span> Steer</h3>
+                            <h4>What It Means</h4>
+                            <p>Redirect the conversation's direction without throwing away useful context. A mid-course correction that preserves what's valuable.</p>
+                            <h4>When to Use</h4>
+                            <ul>
+                                <li>Response went in wrong direction</li>
+                                <li>Need to correct a misunderstanding</li>
+                                <li>Want to shift focus within same topic</li>
+                                <li>Output style doesn't match what you need</li>
+                            </ul>
+                            <h4>The Action</h4>
+                            <p>Explicitly redirect: "Actually, let's focus on X instead" or "That's not quite right—I meant Y."</p>
+                            <div class="example-box">
+                                "This is too formal. Rewrite in a casual, conversational tone—like I'm explaining to a friend over coffee."
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Reference -->
+                <div class="quick-ref">
+                    <div class="sidebar-header">Quick Reference</div>
+                    <div class="quick-ref-grid">
+                        <div class="quick-ref-item"><span class="dot dot-green"></span> New topic → Start Fresh</div>
+                        <div class="quick-ref-item"><span class="dot dot-blue"></span> Same topic → Continue</div>
+                        <div class="quick-ref-item"><span class="dot dot-yellow"></span> Wrong direction → Steer</div>
+                        <div class="quick-ref-item"><span class="dot dot-purple"></span> Wrong format → Shape</div>
+                        <div class="quick-ref-item"><span class="dot dot-violet"></span> Too messy → Extract</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Alternating color state
+        let currentColorState = 'a'; // toggles between 'a' and 'b'
+
+        // Interactive state selection
+        const stateCards = document.querySelectorAll('.state-card');
+        const placeholder = document.getElementById('placeholder');
+        const detailCard = document.getElementById('detailCard');
+        const detailContents = document.querySelectorAll('.detail-content');
+
+        stateCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Toggle color state
+                currentColorState = currentColorState === 'a' ? 'b' : 'a';
+                const activeClass = `active-${currentColorState}`;
+                const oldClass = currentColorState === 'a' ? 'active-b' : 'active-a';
+
+                // Remove all active states
+                stateCards.forEach(c => {
+                    c.classList.remove('active-a', 'active-b');
+                });
+                detailContents.forEach(d => d.classList.remove('active'));
+                detailCard.classList.remove('active-a', 'active-b');
+
+                // Add new active state
+                card.classList.add(activeClass);
+                placeholder.style.display = 'none';
+                detailCard.classList.add(activeClass);
+                
+                const state = card.dataset.state;
+                document.getElementById(`detail-${state}`).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

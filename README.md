@@ -8,7 +8,7 @@ Interactive HTML figures and infographics hosted at [drtlinks.org](https://drtli
 - [AI Context Infographic v2](ai-context-infographic-v2.html)
 - [AI Signal Noise Infographic](ai-signal-noise-infographic.html)
 - [AI Use Case Primitives](ai-use-case-primitives_1.html)
-- [Context Lifecycle Infographic](context-lifecycle-infographic%20(1).html)
+- [Context Lifecycle Infographic](context-lifecycle.html)
 - [Modes of Processing Infographic](modes-of-processing-infographic.html)
 - [Prompting Strategies Infographic](prompting-strategies-infographic.html)
 
