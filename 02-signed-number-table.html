@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signed Number Representation: Range and Sign Extension</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ============================================
+           VIEWPORT CONTAINER
+           Maintains 16:9 aspect ratio, fits in window
+           ============================================ */
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ============================================
+           DESIGN SURFACE
+           Fixed 1920x1080 canvas that gets scaled
+           All content uses fixed pixel values
+           ============================================ */
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+            padding: 20px 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 34px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            font-size: 16px;
+            margin-bottom: 14px;
+        }
+
+        /* ============================================
+           MAIN CONTENT AREA - Three column layout
+           ============================================ */
+        .content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 24px;
+            min-height: 0;
+        }
+
+        /* ============================================
+           LEFT AND RIGHT COLUMNS
+           ============================================ */
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ============================================
+           CENTER COLUMN - TABLE
+           ============================================ */
+        .center-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-container {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid #4fc3f7;
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+
+        .unified-table .bit-table td.out-of-range {
+            color: #546e7a;
+            font-style: italic;
+        }
+
+        .table-container h3 {
+            font-size: 18px;
+            color: #4fc3f7;
+            text-align: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .bit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .bit-table th {
+            background: rgba(79, 195, 247, 0.15);
+            color: #4fc3f7;
+            padding: 4px 14px;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 2px solid #546e7a;
+        }
+
+        .bit-table td {
+            padding: 3px 14px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-family: 'Consolas', 'Monaco', monospace;
+            transition: background 0.2s ease;
+        }
+
+        .bit-table tr:hover td {
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .bit-table tr.selected td {
+            background: rgba(79, 195, 247, 0.2);
+        }
+
+        .positive {
+            color: #81c784;
+        }
+
+        .negative {
+            color: #ef9a9a;
+        }
+
+        .zero {
+            color: #fff59d;
+        }
+
+        .sign-bit {
+            color: #ffab91;
+            font-weight: bold;
+        }
+
+        /* ============================================
+           PANELS
+           ============================================ */
+        .panel {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 16px;
+            font-weight: 700;
+            color: #4fc3f7;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .panel-content {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        /* ============================================
+           RANGE SUMMARY
+           ============================================ */
+        .formula-box {
+            background: rgba(79, 195, 247, 0.1);
+            border: 2px solid #4fc3f7;
+            border-radius: 8px;
+            padding: 10px 14px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .formula {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        .formula sup {
+            font-size: 12px;
+        }
+
+        .range-expansion {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .range-row:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .range-row.active {
+            background: rgba(79, 195, 247, 0.15);
+            border-left: 3px solid #4fc3f7;
+        }
+
+        .range-bits {
+            font-weight: 600;
+            color: #4fc3f7;
+            min-width: 40px;
+            font-size: 13px;
+        }
+
+        .range-bar {
+            flex: 1;
+            height: 18px;
+            background: linear-gradient(90deg, #ef9a9a 0%, #ef9a9a 50%, #81c784 50%, #81c784 100%);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .range-bar::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #fff59d;
+            transform: translateX(-50%);
+        }
+
+        .range-values {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            color: #90a4ae;
+            min-width: 90px;
+            text-align: right;
+        }
+
+        /* ============================================
+           SIGN EXTENSION
+           ============================================ */
+        .extension-demo {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .extension-example {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+
+        .extension-label {
+            font-size: 12px;
+            color: #90a4ae;
+            margin-bottom: 8px;
+        }
+
+        .extension-steps {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .binary-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 16px;
+            padding: 6px 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            display: flex;
+            gap: 2px;
+        }
+
+        .binary-value .bit {
+            display: inline-block;
+            min-width: 14px;
+            text-align: center;
+        }
+
+        .binary-value .bit.sign-highlight {
+            color: #ffab91;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        .binary-value .bit.extended {
+            color: #ffab91;
+            opacity: 0.7;
+        }
+
+        .arrow {
+            font-size: 18px;
+            color: #546e7a;
+        }
+
+        .decimal-equiv {
+            font-size: 14px;
+            color: #90a4ae;
+            margin-left: auto;
+        }
+
+        /* ============================================
+           KEY POINTS
+           ============================================ */
+        .key-points {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .key-point {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid #546e7a;
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .key-point:hover {
+            border-color: #4fc3f7;
+        }
+
+        .key-point.active {
+            border-color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .key-point-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .key-point-content {
+            flex: 1;
+        }
+
+        .key-point-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4fc3f7;
+            margin-bottom: 2px;
+        }
+
+        .key-point-desc {
+            font-size: 11px;
+            color: #90a4ae;
+            line-height: 1.3;
+        }
+
+        /* ============================================
+           HIGHLIGHT BOX
+           ============================================ */
+        .highlight-box {
+            background: rgba(255, 171, 145, 0.1);
+            border: 2px solid #ffab91;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .highlight-box-title {
+            font-weight: 600;
+            color: #ffab91;
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+
+        .highlight-box-content {
+            font-size: 12px;
+            color: #e0e0e0;
+        }
+
+        /* ============================================
+           DEBUG INFO
+           ============================================ */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #4fc3f7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+
+            <h1>Signed Number Representation: Two's Complement</h1>
+            <p class="subtitle">Understanding range and sign extension for N-bit signed integers</p>
+
+            <div class="content">
+                <!-- Left Column: Range + Key Points -->
+                <div class="left-column">
+                    <!-- Range Summary Panel -->
+                    <div class="panel">
+                        <div class="panel-header">Range Formula</div>
+                        <div class="panel-content">
+                            <div class="formula-box">
+                                <div class="formula">-2<sup>N-1</sup> to +2<sup>N-1</sup> - 1</div>
+                            </div>
+                            <div class="range-expansion">
+                                <div class="range-row" data-bits="3">
+                                    <span class="range-bits">3-bit</span>
+                                    <div class="range-bar" style="width: 50px;"></div>
+                                    <span class="range-values"><span class="negative">-4</span> to <span class="positive">+3</span></span>
+                                </div>
+                                <div class="range-row" data-bits="4">
+                                    <span class="range-bits">4-bit</span>
+                                    <div class="range-bar" style="width: 80px;"></div>
+                                    <span class="range-values"><span class="negative">-8</span> to <span class="positive">+7</span></span>
+                                </div>
+                                <div class="range-row" data-bits="5">
+                                    <span class="range-bits">5-bit</span>
+                                    <div class="range-bar" style="width: 120px;"></div>
+                                    <span class="range-values"><span class="negative">-16</span> to <span class="positive">+15</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Teaching Points -->
+                    <div class="key-points">
+                        <div class="key-point" id="point-msb" data-point="msb">
+                            <div class="key-point-icon">&#9312;</div>
+                            <div class="key-point-content">
+                                <div class="key-point-title">MSB is the Sign Bit</div>
+                                <div class="key-point-desc">Most significant bit indicates sign: 0 = positive, 1 = negative</div>
+                            </div>
+                        </div>
+                        <div class="key-point" id="point-asymmetric" data-point="asymmetric">
+                            <div class="key-point-icon">&#9313;</div>
+                            <div class="key-point-content">
+                                <div class="key-point-title">Asymmetric Range</div>
+                                <div class="key-point-desc">One more negative than positive (e.g., -128 to +127 for 8-bit)</div>
+                            </div>
+                        </div>
+                        <div class="key-point" id="point-extension" data-point="extension">
+                            <div class="key-point-icon">&#9314;</div>
+                            <div class="key-point-content">
+                                <div class="key-point-title">Sign Extension Preserves Value</div>
+                                <div class="key-point-desc">Copying sign bit when widening maintains the same value</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Column: Table -->
+                <div class="center-column">
+                    <div class="table-container">
+                        <h3>Two's Complement Representations</h3>
+                        <table class="bit-table">
+                            <thead>
+                                <tr>
+                                    <th>Decimal</th>
+                                    <th>3-bit</th>
+                                    <th>4-bit</th>
+                                    <th>5-bit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unifiedTbody">
+                                <!-- Generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right Column: Sign Extension -->
+                <div class="right-column">
+                    <div class="panel" style="flex: 1;">
+                        <div class="panel-header">Sign Extension Demonstration</div>
+                        <div class="panel-content">
+                            <div class="extension-demo">
+                                <!-- Negative Number Extension -->
+                                <div class="extension-example">
+                                    <div class="extension-label">Extending <span class="negative">-3</span>: Copy sign bit (1) to new positions</div>
+                                    <div class="extension-steps">
+                                        <div class="binary-value" id="neg3-step1">
+                                            <span class="bit sign-highlight">1</span><span class="bit">0</span><span class="bit">1</span>
+                                        </div>
+                                        <span class="arrow">&#8594;</span>
+                                        <div class="binary-value" id="neg3-step2">
+                                            <span class="bit extended">1</span><span class="bit sign-highlight">1</span><span class="bit">0</span><span class="bit">1</span>
+                                        </div>
+                                        <span class="arrow">&#8594;</span>
+                                        <div class="binary-value" id="neg3-step3">
+                                            <span class="bit extended">1</span><span class="bit extended">1</span><span class="bit sign-highlight">1</span><span class="bit">0</span><span class="bit">1</span>
+                                        </div>
+                                        <span class="decimal-equiv">= <span class="negative">-3</span></span>
+                                    </div>
+                                </div>
+
+                                <!-- Positive Number Extension -->
+                                <div class="extension-example">
+                                    <div class="extension-label">Extending <span class="positive">+3</span>: Copy sign bit (0) to new positions</div>
+                                    <div class="extension-steps">
+                                        <div class="binary-value" id="pos3-step1">
+                                            <span class="bit sign-highlight">0</span><span class="bit">1</span><span class="bit">1</span>
+                                        </div>
+                                        <span class="arrow">&#8594;</span>
+                                        <div class="binary-value" id="pos3-step2">
+                                            <span class="bit extended">0</span><span class="bit sign-highlight">0</span><span class="bit">1</span><span class="bit">1</span>
+                                        </div>
+                                        <span class="arrow">&#8594;</span>
+                                        <div class="binary-value" id="pos3-step3">
+                                            <span class="bit extended">0</span><span class="bit extended">0</span><span class="bit sign-highlight">0</span><span class="bit">1</span><span class="bit">1</span>
+                                        </div>
+                                        <span class="decimal-equiv">= <span class="positive">+3</span></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="highlight-box">
+                                <div class="highlight-box-title">Key Insight: Copy the Sign Bit</div>
+                                <div class="highlight-box-content">Sign extension preserves value by replicating the MSB into new high-order positions</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug display -->
+    <div class="debug-info" id="debugInfo"></div>
+
+    <script>
+        // ============================================
+        // HIGH-DPI AWARE AUTO-RESIZE SYSTEM
+        // ============================================
+
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            const debugInfo = document.getElementById('debugInfo');
+
+            const dpr = window.devicePixelRatio || 1;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let containerWidth, containerHeight;
+
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+
+            debugInfo.textContent = `DPR: ${dpr.toFixed(2)} | Scale: ${scale.toFixed(3)} | ${Math.round(containerWidth)}x${Math.round(containerHeight)}`;
+        }
+
+        function initializeResponsive() {
+            autoResize();
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(autoResize, 50);
+            });
+
+            window.addEventListener('orientationchange', () => {
+                setTimeout(autoResize, 100);
+            });
+        }
+
+        // ============================================
+        // TWO'S COMPLEMENT TABLE GENERATION
+        // ============================================
+
+        function toTwosComplement(value, bits) {
+            if (value >= 0) {
+                return value.toString(2).padStart(bits, '0');
+            } else {
+                // Two's complement for negative numbers
+                return ((1 << bits) + value).toString(2);
+            }
+        }
+
+        function generateTableData(bits) {
+            const data = [];
+            const maxPositive = Math.pow(2, bits - 1) - 1;
+            const minNegative = -Math.pow(2, bits - 1);
+
+            // Positive numbers from max down to 0
+            for (let i = maxPositive; i >= 0; i--) {
+                data.push({ decimal: i, binary: toTwosComplement(i, bits) });
+            }
+
+            // Negative numbers from -1 down to min
+            for (let i = -1; i >= minNegative; i--) {
+                data.push({ decimal: i, binary: toTwosComplement(i, bits) });
+            }
+
+            return data;
+        }
+
+        function formatBinaryWithSignBit(binary) {
+            const signBit = binary[0];
+            const rest = binary.slice(1);
+            return `<span class="sign-bit">${signBit}</span>${rest}`;
+        }
+
+        function getDecimalClass(value) {
+            if (value > 0) return 'positive';
+            if (value < 0) return 'negative';
+            return 'zero';
+        }
+
+        function formatDecimal(value) {
+            if (value > 0) return `+${value}`;
+            return value.toString();
+        }
+
+        function populateTable(tbodyId, bits) {
+            const tbody = document.getElementById(tbodyId);
+            const data = generateTableData(bits);
+
+            tbody.innerHTML = data.map((row, index) => `
+                <tr data-decimal="${row.decimal}" data-binary="${row.binary}">
+                    <td>${formatBinaryWithSignBit(row.binary)}</td>
+                    <td class="${getDecimalClass(row.decimal)}">${formatDecimal(row.decimal)}</td>
+                </tr>
+            `).join('');
+
+            // Add click handlers for row selection
+            tbody.querySelectorAll('tr').forEach(tr => {
+                tr.addEventListener('click', () => {
+                    handleRowClick(tr.dataset.decimal, tr.dataset.binary);
+                });
+            });
+        }
+
+        function canRepresent(value, bits) {
+            const maxPositive = Math.pow(2, bits - 1) - 1;
+            const minNegative = -Math.pow(2, bits - 1);
+            return value >= minNegative && value <= maxPositive;
+        }
+
+        function populateUnifiedTable() {
+            const tbody = document.getElementById('unifiedTbody');
+
+            // Create rows for all values from +15 down to -16 (5-bit range)
+            const rows = [];
+
+            // Positive values from max down to 0
+            for (let i = 15; i >= 0; i--) {
+                rows.push(i);
+            }
+
+            // Negative values from -1 down to min
+            for (let i = -1; i >= -16; i--) {
+                rows.push(i);
+            }
+
+            tbody.innerHTML = rows.map(value => {
+                const bit3 = canRepresent(value, 3) ? formatBinaryWithSignBit(toTwosComplement(value, 3)) : '<span class="out-of-range">—</span>';
+                const bit4 = canRepresent(value, 4) ? formatBinaryWithSignBit(toTwosComplement(value, 4)) : '<span class="out-of-range">—</span>';
+                const bit5 = formatBinaryWithSignBit(toTwosComplement(value, 5));
+
+                return `
+                    <tr data-decimal="${value}">
+                        <td class="${getDecimalClass(value)}">${formatDecimal(value)}</td>
+                        <td>${bit3}</td>
+                        <td>${bit4}</td>
+                        <td>${bit5}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Add click handlers for row selection
+            tbody.querySelectorAll('tr').forEach(tr => {
+                tr.addEventListener('click', () => {
+                    const decimal = tr.dataset.decimal;
+                    handleRowClick(decimal, null);
+                });
+            });
+        }
+
+        // ============================================
+        // INTERACTIVITY
+        // ============================================
+
+        let selectedValue = null;
+
+        function handleRowClick(decimal, binary) {
+            const value = parseInt(decimal);
+            selectedValue = value;
+
+            // Clear all selections
+            document.querySelectorAll('.bit-table tr').forEach(tr => {
+                tr.classList.remove('selected');
+            });
+
+            // Highlight the clicked row
+            document.querySelectorAll('.bit-table tr').forEach(tr => {
+                if (parseInt(tr.dataset.decimal) === value) {
+                    tr.classList.add('selected');
+                }
+            });
+        }
+
+        function setupRangeRowInteraction() {
+            document.querySelectorAll('.range-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    const bits = parseInt(row.dataset.bits);
+
+                    // Toggle active state
+                    document.querySelectorAll('.range-row').forEach(r => r.classList.remove('active'));
+                    row.classList.add('active');
+
+                    // Highlight rows within the range of the selected bit width
+                    const maxPositive = Math.pow(2, bits - 1) - 1;
+                    const minNegative = -Math.pow(2, bits - 1);
+
+                    document.querySelectorAll('.bit-table tbody tr').forEach(tr => {
+                        const decimal = parseInt(tr.dataset.decimal);
+                        if (decimal >= minNegative && decimal <= maxPositive) {
+                            tr.style.background = 'rgba(79, 195, 247, 0.1)';
+                        } else {
+                            tr.style.background = '';
+                        }
+                    });
+                });
+            });
+        }
+
+        function setupKeyPointInteraction() {
+            document.querySelectorAll('.key-point').forEach(point => {
+                point.addEventListener('click', () => {
+                    const pointType = point.dataset.point;
+
+                    // Toggle active state
+                    const wasActive = point.classList.contains('active');
+                    document.querySelectorAll('.key-point').forEach(p => p.classList.remove('active'));
+
+                    if (!wasActive) {
+                        point.classList.add('active');
+                        highlightConcept(pointType);
+                    } else {
+                        clearHighlights();
+                    }
+                });
+            });
+        }
+
+        function highlightConcept(concept) {
+            clearHighlights();
+
+            switch(concept) {
+                case 'msb':
+                    // Highlight all sign bits
+                    document.querySelectorAll('.sign-bit').forEach(sb => {
+                        sb.style.background = 'rgba(255, 171, 145, 0.3)';
+                        sb.style.padding = '2px 4px';
+                        sb.style.borderRadius = '3px';
+                    });
+                    break;
+
+                case 'asymmetric':
+                    // Highlight the most negative values (which have no positive counterpart)
+                    // These are -4 (3-bit), -8 (4-bit), -16 (5-bit)
+                    const asymmetricValues = [-4, -8, -16];
+                    document.querySelectorAll('.bit-table tbody tr').forEach(tr => {
+                        const decimal = parseInt(tr.dataset.decimal);
+                        if (asymmetricValues.includes(decimal)) {
+                            tr.style.background = 'rgba(239, 154, 154, 0.2)';
+                        }
+                    });
+                    break;
+
+                case 'extension':
+                    // Highlight the extension examples
+                    document.querySelectorAll('.binary-value .extended').forEach(ext => {
+                        ext.style.background = 'rgba(255, 171, 145, 0.3)';
+                        ext.style.padding = '2px 4px';
+                        ext.style.borderRadius = '3px';
+                    });
+                    break;
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.sign-bit').forEach(sb => {
+                sb.style.background = '';
+                sb.style.padding = '';
+                sb.style.borderRadius = '';
+            });
+            document.querySelectorAll('.bit-table tr').forEach(tr => {
+                tr.style.background = '';
+            });
+            document.querySelectorAll('.binary-value .extended').forEach(ext => {
+                ext.style.background = '';
+                ext.style.padding = '';
+                ext.style.borderRadius = '';
+            });
+        }
+
+        // ============================================
+        // ANIMATION FOR SIGN EXTENSION
+        // ============================================
+
+        function animateExtension() {
+            const steps = [
+                ['neg3-step1', 'neg3-step2', 'neg3-step3'],
+                ['pos3-step1', 'pos3-step2', 'pos3-step3']
+            ];
+
+            steps.forEach((sequence, seqIndex) => {
+                sequence.forEach((stepId, stepIndex) => {
+                    const el = document.getElementById(stepId);
+                    el.style.opacity = '0.4';
+                    el.style.transform = 'scale(0.95)';
+                    el.style.transition = 'all 0.3s ease';
+
+                    setTimeout(() => {
+                        el.style.opacity = '1';
+                        el.style.transform = 'scale(1)';
+                    }, seqIndex * 2000 + stepIndex * 500);
+                });
+            });
+        }
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+
+        function initialize() {
+            initializeResponsive();
+
+            // Populate unified table
+            populateUnifiedTable();
+
+            // Setup interactions
+            setupRangeRowInteraction();
+            setupKeyPointInteraction();
+
+            // Run animation after a short delay
+            setTimeout(animateExtension, 500);
+
+            // Repeat animation periodically
+            setInterval(animateExtension, 6000);
+        }
+
+        initialize();
+    </script>
+</body>
+
+</html>

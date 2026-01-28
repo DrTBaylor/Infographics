@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Variable Karnaugh Map Construction</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ============================================
+           VIEWPORT CONTAINER
+           ============================================ */
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ============================================
+           DESIGN SURFACE
+           ============================================ */
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+            padding: 30px 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 38px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        /* ============================================
+           MAIN LAYOUT
+           ============================================ */
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1.4fr 1fr;
+            gap: 24px;
+            min-height: 0;
+        }
+
+        /* ============================================
+           PANELS
+           ============================================ */
+        .panel {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4fc3f7;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* ============================================
+           SECTION 1: K-MAP CONSTRUCTION
+           ============================================ */
+        .construction-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mini-kmap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .mini-kmap-label {
+            font-size: 14px;
+            color: #90a4ae;
+            margin-bottom: 8px;
+        }
+
+        .mini-kmap-grid {
+            display: grid;
+            grid-template-columns: 40px repeat(4, 50px);
+            grid-template-rows: 30px 30px repeat(2, 50px);
+            gap: 2px;
+        }
+
+        .mini-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .mini-cell.header {
+            color: #ff9800;
+            font-weight: 700;
+        }
+
+        .mini-cell.row-label {
+            color: #4caf50;
+            font-weight: 700;
+        }
+
+        .mini-cell.data {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #546e7a;
+            border-radius: 4px;
+            color: #81d4fa;
+            font-size: 12px;
+        }
+
+        .annotation {
+            background: rgba(79, 195, 247, 0.1);
+            border-left: 3px solid #4fc3f7;
+            padding: 10px 12px;
+            border-radius: 0 6px 6px 0;
+            font-size: 13px;
+            color: #b0bec5;
+        }
+
+        .annotation strong {
+            color: #4fc3f7;
+        }
+
+        .gray-code-explanation {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .gray-code-item {
+            background: rgba(255, 152, 0, 0.15);
+            border: 1px solid rgba(255, 152, 0, 0.4);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #ffb74d;
+        }
+
+        .gray-arrow {
+            color: #546e7a;
+            font-size: 16px;
+        }
+
+        /* ============================================
+           SECTION 2: INTERACTIVE K-MAP
+           ============================================ */
+        .interactive-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .kmap-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .kmap-wrapper {
+            position: relative;
+        }
+
+        .kmap-title {
+            font-size: 16px;
+            color: #90a4ae;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .bc-label {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 700;
+            color: #ff9800;
+        }
+
+        .a-label {
+            position: absolute;
+            left: -35px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-size: 18px;
+            font-weight: 700;
+            color: #4caf50;
+        }
+
+        .kmap-grid {
+            display: grid;
+            grid-template-columns: 50px repeat(4, 100px);
+            grid-template-rows: 40px 35px repeat(2, 100px);
+            gap: 3px;
+        }
+
+        .kmap-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .kmap-cell.corner {
+            font-size: 14px;
+            color: #607d8b;
+        }
+
+        .kmap-cell.col-header {
+            color: #ff9800;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .kmap-cell.row-header {
+            color: #4caf50;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .kmap-cell.clickable {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #546e7a;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 32px;
+        }
+
+        .kmap-cell.clickable:hover {
+            border-color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .kmap-cell.clickable .minterm {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 11px;
+            color: #607d8b;
+            font-weight: 400;
+        }
+
+        .kmap-cell.clickable.value-0 {
+            color: #546e7a;
+        }
+
+        .kmap-cell.clickable.value-1 {
+            background: rgba(76, 175, 80, 0.25);
+            border-color: #4caf50;
+            color: #81c784;
+        }
+
+        .kmap-cell.clickable.value-x {
+            background: rgba(156, 39, 176, 0.25);
+            border-color: #9c27b0;
+            color: #ce93d8;
+        }
+
+        /* Variable regions overlay */
+        .variable-regions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .region-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #90a4ae;
+        }
+
+        .region-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 2px dashed;
+        }
+
+        .region-box.a-region { border-color: #4caf50; background: rgba(76, 175, 80, 0.2); }
+        .region-box.b-region { border-color: #2196f3; background: rgba(33, 150, 243, 0.2); }
+        .region-box.c-region { border-color: #ff9800; background: rgba(255, 152, 0, 0.2); }
+
+        /* Adjacency hint */
+        .adjacency-hint {
+            background: rgba(156, 39, 176, 0.15);
+            border: 1px solid rgba(156, 39, 176, 0.4);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #ce93d8;
+            text-align: center;
+        }
+
+        .adjacency-hint strong {
+            color: #e1bee7;
+        }
+
+        /* ============================================
+           SECTION 3: PRODUCT TERM ENTRY
+           ============================================ */
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-label {
+            font-size: 14px;
+            color: #90a4ae;
+        }
+
+        .sop-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid #546e7a;
+            border-radius: 6px;
+            padding: 12px;
+            color: #e0e0e0;
+            font-family: monospace;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .sop-input:focus {
+            border-color: #4fc3f7;
+        }
+
+        .sop-input::placeholder {
+            color: #546e7a;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button {
+            flex: 1;
+            background: linear-gradient(145deg, #2196f3, #1976d2);
+            color: #fff;
+            border: 2px solid #64b5f6;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .button.secondary {
+            background: #0d1b2a;
+            border-color: #546e7a;
+            color: #90a4ae;
+        }
+
+        .button.secondary:hover {
+            border-color: #78909c;
+            color: #b0bec5;
+        }
+
+        /* Minterm checkboxes */
+        .minterm-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .minterm-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #37474f;
+            border-radius: 6px;
+            padding: 8px 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .minterm-checkbox:hover {
+            border-color: #546e7a;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .minterm-checkbox.checked {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4caf50;
+        }
+
+        .minterm-checkbox input {
+            display: none;
+        }
+
+        .minterm-checkbox .check-box {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #546e7a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .minterm-checkbox.checked .check-box {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .minterm-checkbox .check-box::after {
+            content: '';
+            display: none;
+            width: 6px;
+            height: 10px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-bottom: 2px;
+        }
+
+        .minterm-checkbox.checked .check-box::after {
+            display: block;
+        }
+
+        .minterm-checkbox .minterm-label {
+            font-family: monospace;
+            font-size: 13px;
+            color: #b0bec5;
+        }
+
+        .minterm-checkbox .minterm-value {
+            font-size: 11px;
+            color: #607d8b;
+            margin-left: auto;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 4px 0;
+        }
+
+        /* Status/output area */
+        .output-area {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #37474f;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #81d4fa;
+            min-height: 60px;
+        }
+
+        .output-label {
+            font-size: 12px;
+            color: #607d8b;
+            margin-bottom: 4px;
+        }
+
+        /* Teaching annotation at bottom */
+        .teaching-note {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #ffd54f;
+        }
+
+        .teaching-note strong {
+            color: #ffecb3;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            text-align: center;
+            color: #607d8b;
+            font-size: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 12px;
+        }
+
+        /* ============================================
+           DEBUG INFO
+           ============================================ */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #4fc3f7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+
+            <h1>3-Variable Karnaugh Map Construction</h1>
+            <p class="subtitle">Building and populating a K-map for Boolean function simplification</p>
+
+            <div class="main-content">
+                <!-- SECTION 1: K-MAP CONSTRUCTION -->
+                <div class="panel">
+                    <div class="panel-header">K-map Structure</div>
+                    <div class="panel-content construction-section">
+
+                        <div class="mini-kmap">
+                            <div class="mini-kmap-label">2x4 Grid Structure (Variables: A, B, C)</div>
+                            <div class="mini-kmap-grid">
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell header">00</div>
+                                <div class="mini-cell header">01</div>
+                                <div class="mini-cell header">11</div>
+                                <div class="mini-cell header">10</div>
+                                <div class="mini-cell"></div>
+                                <div class="mini-cell" style="font-size:11px;color:#607d8b;">BC</div>
+                                <div class="mini-cell" style="font-size:11px;color:#607d8b;">BC</div>
+                                <div class="mini-cell" style="font-size:11px;color:#607d8b;">BC</div>
+                                <div class="mini-cell" style="font-size:11px;color:#607d8b;">BC</div>
+                                <div class="mini-cell row-label">0</div>
+                                <div class="mini-cell data">m0</div>
+                                <div class="mini-cell data">m1</div>
+                                <div class="mini-cell data">m3</div>
+                                <div class="mini-cell data">m2</div>
+                                <div class="mini-cell row-label">1</div>
+                                <div class="mini-cell data">m4</div>
+                                <div class="mini-cell data">m5</div>
+                                <div class="mini-cell data">m7</div>
+                                <div class="mini-cell data">m6</div>
+                            </div>
+                        </div>
+
+                        <div class="annotation">
+                            <strong>Row Labels:</strong> A values (0, 1)<br>
+                            <strong>Column Labels:</strong> BC values in Gray code
+                        </div>
+
+                        <div class="annotation">
+                            <strong>Gray Code Order:</strong> Adjacent columns differ by exactly 1 bit
+                            <div class="gray-code-explanation">
+                                <span class="gray-code-item">00</span>
+                                <span class="gray-arrow">&#8594;</span>
+                                <span class="gray-code-item">01</span>
+                                <span class="gray-arrow">&#8594;</span>
+                                <span class="gray-code-item">11</span>
+                                <span class="gray-arrow">&#8594;</span>
+                                <span class="gray-code-item">10</span>
+                            </div>
+                        </div>
+
+                        <div class="annotation">
+                            <strong>Minterm Addresses:</strong><br>
+                            m<sub>n</sub> = decimal value of ABC<br>
+                            e.g., m5 = A=1, B=0, C=1 (101<sub>2</sub> = 5)
+                        </div>
+
+                        <div class="teaching-note">
+                            <strong>Why Gray Code?</strong> Ensures adjacent cells differ by only one variable, enabling visual identification of simplification opportunities.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: INTERACTIVE K-MAP -->
+                <div class="panel">
+                    <div class="panel-header">Interactive K-map</div>
+                    <div class="panel-content interactive-section">
+
+                        <div class="kmap-container">
+                            <div class="kmap-title">Click cells to toggle: 0 &#8594; 1 &#8594; X &#8594; 0</div>
+                            <div class="kmap-wrapper">
+                                <span class="bc-label">BC</span>
+                                <span class="a-label">A</span>
+                                <div class="kmap-grid">
+                                    <!-- Header row -->
+                                    <div class="kmap-cell corner">A\BC</div>
+                                    <div class="kmap-cell col-header">00</div>
+                                    <div class="kmap-cell col-header">01</div>
+                                    <div class="kmap-cell col-header">11</div>
+                                    <div class="kmap-cell col-header">10</div>
+
+                                    <!-- Sub-header showing variables -->
+                                    <div class="kmap-cell corner"></div>
+                                    <div class="kmap-cell" style="font-size:11px;color:#607d8b;">B'C'</div>
+                                    <div class="kmap-cell" style="font-size:11px;color:#607d8b;">B'C</div>
+                                    <div class="kmap-cell" style="font-size:11px;color:#607d8b;">BC</div>
+                                    <div class="kmap-cell" style="font-size:11px;color:#607d8b;">BC'</div>
+
+                                    <!-- Row 0 (A=0) -->
+                                    <div class="kmap-cell row-header">0</div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="0" data-value="0">
+                                        <span class="minterm">m0</span>0
+                                    </div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="1" data-value="0">
+                                        <span class="minterm">m1</span>0
+                                    </div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="3" data-value="0">
+                                        <span class="minterm">m3</span>0
+                                    </div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="2" data-value="0">
+                                        <span class="minterm">m2</span>0
+                                    </div>
+
+                                    <!-- Row 1 (A=1) -->
+                                    <div class="kmap-cell row-header">1</div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="4" data-value="0">
+                                        <span class="minterm">m4</span>0
+                                    </div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="5" data-value="0">
+                                        <span class="minterm">m5</span>0
+                                    </div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="7" data-value="0">
+                                        <span class="minterm">m7</span>0
+                                    </div>
+                                    <div class="kmap-cell clickable value-0" data-minterm="6" data-value="0">
+                                        <span class="minterm">m6</span>0
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="variable-regions">
+                            <div class="region-indicator">
+                                <div class="region-box a-region"></div>
+                                <span>A=1 (bottom row)</span>
+                            </div>
+                            <div class="region-indicator">
+                                <div class="region-box b-region"></div>
+                                <span>B=1 (columns 11, 10)</span>
+                            </div>
+                            <div class="region-indicator">
+                                <div class="region-box c-region"></div>
+                                <span>C=1 (columns 01, 11)</span>
+                            </div>
+                        </div>
+
+                        <div class="adjacency-hint">
+                            <strong>Wraparound Adjacency:</strong> Column 00 is adjacent to column 10 (they differ by only B)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: PRODUCT TERM ENTRY -->
+                <div class="panel">
+                    <div class="panel-header">Product Term Entry</div>
+                    <div class="panel-content input-section">
+
+                        <div class="input-group">
+                            <div class="input-label">Enter SOP Expression:</div>
+                            <input type="text" class="sop-input" id="sopInput"
+                                   placeholder="e.g., A'BC + AB'C' + ABC">
+                            <div class="button-row">
+                                <button class="button" id="parseBtn">Parse</button>
+                                <button class="button secondary" id="clearBtn">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="input-group">
+                            <div class="input-label">Or select minterms directly:</div>
+                            <div class="minterm-grid" id="mintermGrid">
+                                <label class="minterm-checkbox" data-minterm="0">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m0</span>
+                                    <span class="minterm-value">000</span>
+                                </label>
+                                <label class="minterm-checkbox" data-minterm="1">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m1</span>
+                                    <span class="minterm-value">001</span>
+                                </label>
+                                <label class="minterm-checkbox" data-minterm="2">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m2</span>
+                                    <span class="minterm-value">010</span>
+                                </label>
+                                <label class="minterm-checkbox" data-minterm="3">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m3</span>
+                                    <span class="minterm-value">011</span>
+                                </label>
+                                <label class="minterm-checkbox" data-minterm="4">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m4</span>
+                                    <span class="minterm-value">100</span>
+                                </label>
+                                <label class="minterm-checkbox" data-minterm="5">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m5</span>
+                                    <span class="minterm-value">101</span>
+                                </label>
+                                <label class="minterm-checkbox" data-minterm="6">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m6</span>
+                                    <span class="minterm-value">110</span>
+                                </label>
+                                <label class="minterm-checkbox" data-minterm="7">
+                                    <input type="checkbox">
+                                    <span class="check-box"></span>
+                                    <span class="minterm-label">m7</span>
+                                    <span class="minterm-value">111</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="input-group">
+                            <div class="output-label">Current Function:</div>
+                            <div class="output-area" id="outputArea">
+                                F(A,B,C) = 0
+                            </div>
+                        </div>
+
+                        <div class="teaching-note">
+                            <strong>Notation:</strong> Use ' for complement (A' = NOT A), + for OR, and adjacency for AND.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                3-Variable K-map: 8 cells representing all combinations of A, B, C
+            </div>
+        </div>
+    </div>
+
+    <div class="debug-info" id="debugInfo"></div>
+
+    <script>
+        // ============================================
+        // HIGH-DPI AWARE AUTO-RESIZE SYSTEM
+        // ============================================
+
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            const debugInfo = document.getElementById('debugInfo');
+
+            const dpr = window.devicePixelRatio || 1;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let containerWidth, containerHeight;
+
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+
+            debugInfo.textContent = `DPR: ${dpr.toFixed(2)} | Scale: ${scale.toFixed(3)} | ${Math.round(containerWidth)}x${Math.round(containerHeight)}`;
+        }
+
+        function initializeResponsive() {
+            autoResize();
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(autoResize, 50);
+            });
+
+            window.addEventListener('orientationchange', () => {
+                setTimeout(autoResize, 100);
+            });
+        }
+
+        // ============================================
+        // K-MAP DATA AND STATE
+        // ============================================
+
+        // K-map values: 0, 1, or 'x' (don't care)
+        const kmapState = {
+            0: '0', 1: '0', 2: '0', 3: '0',
+            4: '0', 5: '0', 6: '0', 7: '0'
+        };
+
+        // Minterm to variable mapping
+        const mintermToVars = {
+            0: { A: 0, B: 0, C: 0 },  // 000 - A'B'C'
+            1: { A: 0, B: 0, C: 1 },  // 001 - A'B'C
+            2: { A: 0, B: 1, C: 0 },  // 010 - A'BC'
+            3: { A: 0, B: 1, C: 1 },  // 011 - A'BC
+            4: { A: 1, B: 0, C: 0 },  // 100 - AB'C'
+            5: { A: 1, B: 0, C: 1 },  // 101 - AB'C
+            6: { A: 1, B: 1, C: 0 },  // 110 - ABC'
+            7: { A: 1, B: 1, C: 1 }   // 111 - ABC
+        };
+
+        // ============================================
+        // K-MAP CELL INTERACTION
+        // ============================================
+
+        function getCellByMinterm(minterm) {
+            return document.querySelector(`.kmap-cell.clickable[data-minterm="${minterm}"]`);
+        }
+
+        function getCheckboxByMinterm(minterm) {
+            return document.querySelector(`.minterm-checkbox[data-minterm="${minterm}"]`);
+        }
+
+        function updateCellDisplay(minterm, value) {
+            const cell = getCellByMinterm(minterm);
+            if (!cell) return;
+
+            // Remove all value classes
+            cell.classList.remove('value-0', 'value-1', 'value-x');
+
+            // Add appropriate class and update text
+            if (value === '1') {
+                cell.classList.add('value-1');
+                cell.innerHTML = `<span class="minterm">m${minterm}</span>1`;
+            } else if (value === 'x' || value === 'X') {
+                cell.classList.add('value-x');
+                cell.innerHTML = `<span class="minterm">m${minterm}</span>X`;
+            } else {
+                cell.classList.add('value-0');
+                cell.innerHTML = `<span class="minterm">m${minterm}</span>0`;
+            }
+
+            cell.dataset.value = value;
+        }
+
+        function updateCheckboxDisplay(minterm, value) {
+            const checkbox = getCheckboxByMinterm(minterm);
+            if (!checkbox) return;
+
+            const input = checkbox.querySelector('input');
+            if (value === '1') {
+                checkbox.classList.add('checked');
+                input.checked = true;
+            } else {
+                checkbox.classList.remove('checked');
+                input.checked = false;
+            }
+        }
+
+        function toggleCellValue(minterm) {
+            const currentValue = kmapState[minterm];
+            let newValue;
+
+            if (currentValue === '0') {
+                newValue = '1';
+            } else if (currentValue === '1') {
+                newValue = 'x';
+            } else {
+                newValue = '0';
+            }
+
+            kmapState[minterm] = newValue;
+            updateCellDisplay(minterm, newValue);
+            updateCheckboxDisplay(minterm, newValue);
+            updateOutput();
+        }
+
+        function setMinterm(minterm, value) {
+            kmapState[minterm] = value;
+            updateCellDisplay(minterm, value);
+            updateCheckboxDisplay(minterm, value);
+        }
+
+        // ============================================
+        // OUTPUT GENERATION
+        // ============================================
+
+        function mintermToProductTerm(minterm) {
+            const vars = mintermToVars[minterm];
+            let term = '';
+            term += vars.A ? 'A' : "A'";
+            term += vars.B ? 'B' : "B'";
+            term += vars.C ? 'C' : "C'";
+            return term;
+        }
+
+        function updateOutput() {
+            const outputArea = document.getElementById('outputArea');
+
+            const ones = [];
+            const dontCares = [];
+
+            for (let i = 0; i < 8; i++) {
+                if (kmapState[i] === '1') {
+                    ones.push(i);
+                } else if (kmapState[i] === 'x') {
+                    dontCares.push(i);
+                }
+            }
+
+            let output = 'F(A,B,C) = ';
+
+            if (ones.length === 0 && dontCares.length === 0) {
+                output += '0';
+            } else if (ones.length === 8) {
+                output += '1';
+            } else if (ones.length > 0) {
+                output += ones.map(m => mintermToProductTerm(m)).join(' + ');
+            } else {
+                output += '0';
+            }
+
+            if (dontCares.length > 0) {
+                output += `\nd(${dontCares.join(', ')})`;
+            }
+
+            output += `\n\nMinterms: ${ones.length > 0 ? 'Σm(' + ones.join(', ') + ')' : 'none'}`;
+
+            outputArea.textContent = output;
+        }
+
+        // ============================================
+        // SOP EXPRESSION PARSING
+        // ============================================
+
+        function parseSOPExpression(expr) {
+            // Clean up the expression
+            expr = expr.toUpperCase().replace(/\s+/g, '');
+
+            // Split by + to get individual product terms
+            const terms = expr.split('+');
+            const minterms = new Set();
+
+            for (const term of terms) {
+                if (!term) continue;
+
+                // Parse each term to determine which minterms it covers
+                const termMinterms = parseTerm(term);
+                termMinterms.forEach(m => minterms.add(m));
+            }
+
+            return Array.from(minterms);
+        }
+
+        function parseTerm(term) {
+            // Parse a single product term like "A'BC" or "AB'C'"
+            // Returns array of minterm indices this term covers
+
+            let aVal = null;  // null means variable is not present (covers both 0 and 1)
+            let bVal = null;
+            let cVal = null;
+
+            let i = 0;
+            while (i < term.length) {
+                const char = term[i];
+                const isComplemented = (i + 1 < term.length && term[i + 1] === "'");
+
+                if (char === 'A') {
+                    aVal = isComplemented ? 0 : 1;
+                    i += isComplemented ? 2 : 1;
+                } else if (char === 'B') {
+                    bVal = isComplemented ? 0 : 1;
+                    i += isComplemented ? 2 : 1;
+                } else if (char === 'C') {
+                    cVal = isComplemented ? 0 : 1;
+                    i += isComplemented ? 2 : 1;
+                } else {
+                    i++;
+                }
+            }
+
+            // Generate all minterms that match this term
+            const minterms = [];
+            const aVals = aVal === null ? [0, 1] : [aVal];
+            const bVals = bVal === null ? [0, 1] : [bVal];
+            const cVals = cVal === null ? [0, 1] : [cVal];
+
+            for (const a of aVals) {
+                for (const b of bVals) {
+                    for (const c of cVals) {
+                        minterms.push(a * 4 + b * 2 + c);
+                    }
+                }
+            }
+
+            return minterms;
+        }
+
+        function handleParse() {
+            const input = document.getElementById('sopInput').value.trim();
+            if (!input) return;
+
+            // Clear existing values
+            for (let i = 0; i < 8; i++) {
+                setMinterm(i, '0');
+            }
+
+            // Parse and set new values
+            const minterms = parseSOPExpression(input);
+            for (const m of minterms) {
+                if (m >= 0 && m < 8) {
+                    setMinterm(m, '1');
+                }
+            }
+
+            updateOutput();
+        }
+
+        function handleClear() {
+            for (let i = 0; i < 8; i++) {
+                setMinterm(i, '0');
+            }
+            document.getElementById('sopInput').value = '';
+            updateOutput();
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        function initializeInteractivity() {
+            // K-map cell clicks
+            document.querySelectorAll('.kmap-cell.clickable').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    const minterm = parseInt(cell.dataset.minterm);
+                    toggleCellValue(minterm);
+                });
+            });
+
+            // Minterm checkbox clicks
+            document.querySelectorAll('.minterm-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const minterm = parseInt(checkbox.dataset.minterm);
+                    const currentValue = kmapState[minterm];
+                    const newValue = currentValue === '1' ? '0' : '1';
+                    setMinterm(minterm, newValue);
+                    updateOutput();
+                });
+            });
+
+            // Parse button
+            document.getElementById('parseBtn').addEventListener('click', handleParse);
+
+            // Clear button
+            document.getElementById('clearBtn').addEventListener('click', handleClear);
+
+            // Enter key in input
+            document.getElementById('sopInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleParse();
+                }
+            });
+
+            // Initial output
+            updateOutput();
+        }
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        initializeResponsive();
+        initializeInteractivity();
+    </script>
+</body>
+
+</html>

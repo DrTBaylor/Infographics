@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4-Variable Karnaugh Map Construction</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ============================================
+           VIEWPORT CONTAINER
+           ============================================ */
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ============================================
+           DESIGN SURFACE
+           ============================================ */
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+            padding: 30px 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================
+           TYPOGRAPHY
+           ============================================ */
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 38px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        /* ============================================
+           MAIN LAYOUT
+           ============================================ */
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 420px 1fr 380px;
+            gap: 24px;
+            min-height: 0;
+        }
+
+        /* ============================================
+           SECTION 1: K-MAP CONSTRUCTION (LEFT)
+           ============================================ */
+        .construction-panel {
+            background: rgba(13, 27, 42, 0.9);
+            border: 2px solid #546e7a;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4fc3f7;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .construction-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .mini-kmap {
+            display: grid;
+            grid-template-columns: 40px repeat(4, 48px);
+            grid-template-rows: 40px repeat(4, 40px);
+            gap: 2px;
+            font-size: 13px;
+        }
+
+        .mini-kmap .corner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #ffb74d;
+            font-size: 14px;
+        }
+
+        .mini-kmap .col-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 195, 247, 0.15);
+            border-radius: 4px;
+            font-weight: 600;
+            color: #4fc3f7;
+        }
+
+        .mini-kmap .row-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(129, 199, 132, 0.15);
+            border-radius: 4px;
+            font-weight: 600;
+            color: #81c784;
+        }
+
+        .mini-kmap .mini-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #455a64;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #78909c;
+        }
+
+        .annotations {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #b0bec5;
+        }
+
+        .annotation-item {
+            margin-bottom: 12px;
+            padding-left: 12px;
+            border-left: 3px solid #4fc3f7;
+        }
+
+        .annotation-item strong {
+            color: #4fc3f7;
+        }
+
+        .gray-code-note {
+            background: rgba(255, 183, 77, 0.1);
+            border: 1px solid rgba(255, 183, 77, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .gray-code-note strong {
+            color: #ffb74d;
+        }
+
+        /* ============================================
+           SECTION 2: INTERACTIVE K-MAP (CENTER)
+           ============================================ */
+        .interactive-panel {
+            background: rgba(13, 27, 42, 0.9);
+            border: 2px solid #546e7a;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kmap-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kmap-wrapper {
+            position: relative;
+        }
+
+        /* Variable labels */
+        .var-label-cd {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 700;
+            color: #4fc3f7;
+        }
+
+        .var-label-ab {
+            position: absolute;
+            left: -45px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-size: 18px;
+            font-weight: 700;
+            color: #81c784;
+        }
+
+        /* Main K-map grid */
+        .kmap-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(4, 100px);
+            grid-template-rows: 50px repeat(4, 100px);
+            gap: 4px;
+        }
+
+        .kmap-grid .corner {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            padding: 4px;
+            font-size: 14px;
+            color: #78909c;
+        }
+
+        .kmap-grid .corner span {
+            border-bottom: 2px solid #ffb74d;
+            padding-bottom: 2px;
+        }
+
+        .kmap-grid .col-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 195, 247, 0.15);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 20px;
+            color: #4fc3f7;
+        }
+
+        .kmap-grid .col-header .binary {
+            font-size: 12px;
+            color: #78909c;
+            margin-top: 2px;
+        }
+
+        .kmap-grid .row-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(129, 199, 132, 0.15);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 20px;
+            color: #81c784;
+        }
+
+        .kmap-grid .row-header .binary {
+            font-size: 12px;
+            color: #78909c;
+            margin-top: 2px;
+        }
+
+        .kmap-cell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #455a64;
+            border-radius: 8px;
+            font-size: 36px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .kmap-cell:hover {
+            border-color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .kmap-cell .minterm {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 11px;
+            font-weight: 400;
+            color: #607d8b;
+        }
+
+        .kmap-cell[data-value="0"] {
+            color: #546e7a;
+        }
+
+        .kmap-cell[data-value="1"] {
+            background: rgba(129, 199, 132, 0.2);
+            border-color: #81c784;
+            color: #81c784;
+        }
+
+        .kmap-cell[data-value="X"] {
+            background: rgba(255, 183, 77, 0.15);
+            border-color: #ffb74d;
+            color: #ffb74d;
+        }
+
+        /* Wrap indicators */
+        .wrap-indicator {
+            position: absolute;
+            font-size: 12px;
+            color: #78909c;
+        }
+
+        .wrap-top {
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .wrap-bottom {
+            bottom: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .wrap-left {
+            left: -55px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .wrap-right {
+            right: -55px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Legend */
+        .kmap-legend {
+            display: flex;
+            gap: 24px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .legend-swatch.val-0 {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #455a64;
+            color: #546e7a;
+        }
+
+        .legend-swatch.val-1 {
+            background: rgba(129, 199, 132, 0.2);
+            border: 2px solid #81c784;
+            color: #81c784;
+        }
+
+        .legend-swatch.val-x {
+            background: rgba(255, 183, 77, 0.15);
+            border: 2px solid #ffb74d;
+            color: #ffb74d;
+        }
+
+        /* ============================================
+           SECTION 3: PRODUCT TERM ENTRY (RIGHT)
+           ============================================ */
+        .entry-panel {
+            background: rgba(13, 27, 42, 0.9);
+            border: 2px solid #546e7a;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            color: #90a4ae;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #455a64;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+
+        .input-group input::placeholder {
+            color: #546e7a;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 2px solid;
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #2196f3, #1976d2);
+            border-color: #64b5f6;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: #546e7a;
+            color: #90a4ae;
+        }
+
+        .btn-secondary:hover {
+            border-color: #78909c;
+            color: #b0bec5;
+        }
+
+        /* Minterm checkboxes */
+        .minterm-section {
+            margin-bottom: 16px;
+        }
+
+        .minterm-section h4 {
+            font-size: 14px;
+            color: #90a4ae;
+            margin-bottom: 10px;
+        }
+
+        .minterm-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .minterm-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.1s ease;
+        }
+
+        .minterm-checkbox:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .minterm-checkbox input {
+            accent-color: #4fc3f7;
+        }
+
+        .minterm-checkbox.checked {
+            background: rgba(129, 199, 132, 0.15);
+        }
+
+        /* Teaching annotations */
+        .teaching-section {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .teaching-section h4 {
+            font-size: 16px;
+            color: #4fc3f7;
+            margin-bottom: 12px;
+        }
+
+        .teaching-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #b0bec5;
+        }
+
+        .teaching-item strong {
+            color: #81c784;
+        }
+
+        .teaching-item code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #ffb74d;
+        }
+
+        /* Example groupings */
+        .example-groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .example-group {
+            padding: 4px 10px;
+            background: rgba(79, 195, 247, 0.15);
+            border: 1px solid rgba(79, 195, 247, 0.3);
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4fc3f7;
+            cursor: pointer;
+        }
+
+        .example-group:hover {
+            background: rgba(79, 195, 247, 0.25);
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            text-align: center;
+            color: #607d8b;
+            font-size: 14px;
+            padding-top: 12px;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            margin-top: 16px;
+        }
+
+        /* ============================================
+           DEBUG INFO
+           ============================================ */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #4fc3f7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+
+            <h1>4-Variable Karnaugh Map Construction and Product Term Entry</h1>
+            <p class="subtitle">Interactive tool for building and populating a 4-variable K-map with variables A, B, C, D</p>
+
+            <div class="main-content">
+                <!-- SECTION 1: K-MAP CONSTRUCTION -->
+                <div class="construction-panel">
+                    <div class="section-title">K-map Structure</div>
+
+                    <div class="construction-grid">
+                        <div class="mini-kmap">
+                            <div class="corner">CD<br>AB</div>
+                            <div class="col-header">00</div>
+                            <div class="col-header">01</div>
+                            <div class="col-header">11</div>
+                            <div class="col-header">10</div>
+
+                            <div class="row-header">00</div>
+                            <div class="mini-cell">m0</div>
+                            <div class="mini-cell">m1</div>
+                            <div class="mini-cell">m3</div>
+                            <div class="mini-cell">m2</div>
+
+                            <div class="row-header">01</div>
+                            <div class="mini-cell">m4</div>
+                            <div class="mini-cell">m5</div>
+                            <div class="mini-cell">m7</div>
+                            <div class="mini-cell">m6</div>
+
+                            <div class="row-header">11</div>
+                            <div class="mini-cell">m12</div>
+                            <div class="mini-cell">m13</div>
+                            <div class="mini-cell">m15</div>
+                            <div class="mini-cell">m14</div>
+
+                            <div class="row-header">10</div>
+                            <div class="mini-cell">m8</div>
+                            <div class="mini-cell">m9</div>
+                            <div class="mini-cell">m11</div>
+                            <div class="mini-cell">m10</div>
+                        </div>
+                    </div>
+
+                    <div class="annotations">
+                        <div class="annotation-item">
+                            <strong>Gray Code Order:</strong> 00 &rarr; 01 &rarr; 11 &rarr; 10<br>
+                            Only one bit changes between adjacent cells.
+                        </div>
+
+                        <div class="annotation-item">
+                            <strong>Minterm Formula:</strong><br>
+                            m<sub>n</sub> = 8A + 4B + 2C + D<br>
+                            Example: AB=01, CD=11 &rarr; m<sub>7</sub>
+                        </div>
+
+                        <div class="annotation-item">
+                            <strong>Variable Regions:</strong><br>
+                            A=1: bottom two rows<br>
+                            B=1: middle two rows<br>
+                            C=1: middle two columns<br>
+                            D=1: columns 01 and 11
+                        </div>
+
+                        <div class="gray-code-note">
+                            <strong>Adjacency Property:</strong> Adjacent cells (including wrap-around) differ by exactly one variable, enabling grouping for simplification.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: INTERACTIVE K-MAP -->
+                <div class="interactive-panel">
+                    <div class="section-title">Interactive K-map (Click cells to toggle: 0 &rarr; 1 &rarr; X &rarr; 0)</div>
+
+                    <div class="kmap-container">
+                        <div class="kmap-wrapper">
+                            <div class="var-label-cd">CD</div>
+                            <div class="var-label-ab">AB</div>
+
+                            <!-- Wrap indicators -->
+                            <div class="wrap-indicator wrap-top">&uarr; wraps to bottom</div>
+                            <div class="wrap-indicator wrap-bottom">&darr; wraps to top</div>
+                            <div class="wrap-indicator wrap-left">&larr; wraps</div>
+                            <div class="wrap-indicator wrap-right">wraps &rarr;</div>
+
+                            <div class="kmap-grid" id="kmapGrid">
+                                <div class="corner"><span>CD/AB</span></div>
+                                <div class="col-header">00<div class="binary">C'D'</div></div>
+                                <div class="col-header">01<div class="binary">C'D</div></div>
+                                <div class="col-header">11<div class="binary">CD</div></div>
+                                <div class="col-header">10<div class="binary">CD'</div></div>
+
+                                <div class="row-header">00<div class="binary">A'B'</div></div>
+                                <div class="kmap-cell" data-minterm="0" data-value="0"><span class="minterm">m0</span>0</div>
+                                <div class="kmap-cell" data-minterm="1" data-value="0"><span class="minterm">m1</span>0</div>
+                                <div class="kmap-cell" data-minterm="3" data-value="0"><span class="minterm">m3</span>0</div>
+                                <div class="kmap-cell" data-minterm="2" data-value="0"><span class="minterm">m2</span>0</div>
+
+                                <div class="row-header">01<div class="binary">A'B</div></div>
+                                <div class="kmap-cell" data-minterm="4" data-value="0"><span class="minterm">m4</span>0</div>
+                                <div class="kmap-cell" data-minterm="5" data-value="0"><span class="minterm">m5</span>0</div>
+                                <div class="kmap-cell" data-minterm="7" data-value="0"><span class="minterm">m7</span>0</div>
+                                <div class="kmap-cell" data-minterm="6" data-value="0"><span class="minterm">m6</span>0</div>
+
+                                <div class="row-header">11<div class="binary">AB</div></div>
+                                <div class="kmap-cell" data-minterm="12" data-value="0"><span class="minterm">m12</span>0</div>
+                                <div class="kmap-cell" data-minterm="13" data-value="0"><span class="minterm">m13</span>0</div>
+                                <div class="kmap-cell" data-minterm="15" data-value="0"><span class="minterm">m15</span>0</div>
+                                <div class="kmap-cell" data-minterm="14" data-value="0"><span class="minterm">m14</span>0</div>
+
+                                <div class="row-header">10<div class="binary">AB'</div></div>
+                                <div class="kmap-cell" data-minterm="8" data-value="0"><span class="minterm">m8</span>0</div>
+                                <div class="kmap-cell" data-minterm="9" data-value="0"><span class="minterm">m9</span>0</div>
+                                <div class="kmap-cell" data-minterm="11" data-value="0"><span class="minterm">m11</span>0</div>
+                                <div class="kmap-cell" data-minterm="10" data-value="0"><span class="minterm">m10</span>0</div>
+                            </div>
+                        </div>
+
+                        <div class="kmap-legend">
+                            <div class="legend-item">
+                                <div class="legend-swatch val-0">0</div>
+                                <span>False</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-swatch val-1">1</div>
+                                <span>True</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-swatch val-x">X</div>
+                                <span>Don't Care</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: PRODUCT TERM ENTRY -->
+                <div class="entry-panel">
+                    <div class="section-title">Product Term Entry</div>
+
+                    <div class="input-group">
+                        <label>SOP Expression (e.g., A'B'CD + ABCD' + A'BC'D)</label>
+                        <input type="text" id="sopInput" placeholder="Enter SOP terms...">
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="parseBtn">Parse</button>
+                        <button class="btn btn-secondary" id="clearBtn">Clear</button>
+                    </div>
+
+                    <div class="minterm-section">
+                        <h4>Or select minterms directly:</h4>
+                        <div class="minterm-grid" id="mintermGrid">
+                            <!-- Generated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="teaching-section">
+                        <h4>Teaching Notes</h4>
+
+                        <div class="teaching-item">
+                            <strong>Toroidal Adjacency:</strong> The K-map wraps both horizontally and vertically. Top row is adjacent to bottom row; left column is adjacent to right column.
+                        </div>
+
+                        <div class="teaching-item">
+                            <strong>Valid Group Sizes:</strong> Groups must contain 2<sup>n</sup> cells: <code>1</code>, <code>2</code>, <code>4</code>, <code>8</code>, or <code>16</code> cells.
+                        </div>
+
+                        <div class="teaching-item">
+                            <strong>Corner Group:</strong> The four corners (m0, m2, m8, m10) form a valid group! They simplify to <code>B'D'</code>.
+                        </div>
+
+                        <div class="teaching-item">
+                            <strong>Try these examples:</strong>
+                            <div class="example-groups">
+                                <span class="example-group" data-expr="A'B'C'D'">A'B'C'D'</span>
+                                <span class="example-group" data-expr="AB">AB</span>
+                                <span class="example-group" data-expr="B'D'">B'D'</span>
+                                <span class="example-group" data-expr="A'B'CD + ABCD'">2 terms</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                Click cells to toggle values | Enter SOP expressions using A, B, C, D (use ' for complement, + for OR) | Valid groups: 1, 2, 4, 8, or 16 adjacent cells
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug display -->
+    <div class="debug-info" id="debugInfo"></div>
+
+    <script>
+        // ============================================
+        // HIGH-DPI AWARE AUTO-RESIZE SYSTEM
+        // ============================================
+
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            const debugInfo = document.getElementById('debugInfo');
+
+            const dpr = window.devicePixelRatio || 1;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let containerWidth, containerHeight;
+
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+
+            debugInfo.textContent = `DPR: ${dpr.toFixed(2)} | Scale: ${scale.toFixed(3)} | ${Math.round(containerWidth)}x${Math.round(containerHeight)}`;
+        }
+
+        function initializeResponsive() {
+            autoResize();
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(autoResize, 50);
+            });
+
+            window.addEventListener('orientationchange', () => {
+                setTimeout(autoResize, 100);
+            });
+        }
+
+        // ============================================
+        // K-MAP LOGIC
+        // ============================================
+
+        // Minterm to position mapping (row, col in grid)
+        // Grid uses Gray code: 00, 01, 11, 10
+        const mintermPositions = {
+            0:  [0, 0], 1:  [0, 1], 3:  [0, 2], 2:  [0, 3],
+            4:  [1, 0], 5:  [1, 1], 7:  [1, 2], 6:  [1, 3],
+            12: [2, 0], 13: [2, 1], 15: [2, 2], 14: [2, 3],
+            8:  [3, 0], 9:  [3, 1], 11: [3, 2], 10: [3, 3]
+        };
+
+        // Get cell element by minterm number
+        function getCellByMinterm(m) {
+            return document.querySelector(`.kmap-cell[data-minterm="${m}"]`);
+        }
+
+        // Toggle cell value: 0 -> 1 -> X -> 0
+        function toggleCell(cell) {
+            const currentValue = cell.getAttribute('data-value');
+            let newValue;
+
+            if (currentValue === '0') {
+                newValue = '1';
+            } else if (currentValue === '1') {
+                newValue = 'X';
+            } else {
+                newValue = '0';
+            }
+
+            setCellValue(cell, newValue);
+            updateMintermCheckboxes();
+        }
+
+        // Set cell value
+        function setCellValue(cell, value) {
+            cell.setAttribute('data-value', value);
+            // Update display (keep minterm span, update text)
+            const mintermSpan = cell.querySelector('.minterm');
+            cell.innerHTML = '';
+            cell.appendChild(mintermSpan);
+            cell.appendChild(document.createTextNode(value));
+        }
+
+        // Clear all cells
+        function clearAllCells() {
+            document.querySelectorAll('.kmap-cell').forEach(cell => {
+                setCellValue(cell, '0');
+            });
+            updateMintermCheckboxes();
+        }
+
+        // Set minterm to 1
+        function setMinterm(m, value = '1') {
+            const cell = getCellByMinterm(m);
+            if (cell) {
+                setCellValue(cell, value);
+            }
+        }
+
+        // Parse SOP expression
+        function parseSOPExpression(expr) {
+            // Remove spaces
+            expr = expr.replace(/\s+/g, '');
+
+            // Split by + to get individual product terms
+            const terms = expr.split('+');
+            const minterms = new Set();
+
+            for (const term of terms) {
+                const termMinterms = parseProductTerm(term);
+                termMinterms.forEach(m => minterms.add(m));
+            }
+
+            return Array.from(minterms);
+        }
+
+        // Parse a single product term (e.g., "A'B'CD" or "AB")
+        function parseProductTerm(term) {
+            // Determine which variables are specified and their values
+            // A=8, B=4, C=2, D=1
+
+            let mustBe1 = 0;  // Bits that must be 1
+            let mustBe0 = 0;  // Bits that must be 0
+
+            // Parse the term
+            let i = 0;
+            while (i < term.length) {
+                const char = term[i].toUpperCase();
+                const isComplemented = (i + 1 < term.length && term[i + 1] === "'");
+
+                let bitValue;
+                switch (char) {
+                    case 'A': bitValue = 8; break;
+                    case 'B': bitValue = 4; break;
+                    case 'C': bitValue = 2; break;
+                    case 'D': bitValue = 1; break;
+                    default: i++; continue;
+                }
+
+                if (isComplemented) {
+                    mustBe0 |= bitValue;
+                    i += 2;
+                } else {
+                    mustBe1 |= bitValue;
+                    i++;
+                }
+            }
+
+            // Find all minterms that match
+            const minterms = [];
+            for (let m = 0; m < 16; m++) {
+                // Check if this minterm satisfies the constraints
+                if ((m & mustBe1) === mustBe1 && (m & mustBe0) === 0) {
+                    minterms.push(m);
+                }
+            }
+
+            return minterms;
+        }
+
+        // ============================================
+        // MINTERM CHECKBOX GRID
+        // ============================================
+
+        function createMintermGrid() {
+            const grid = document.getElementById('mintermGrid');
+            grid.innerHTML = '';
+
+            // Create checkboxes in minterm order for the grid layout
+            const order = [0, 1, 3, 2, 4, 5, 7, 6, 12, 13, 15, 14, 8, 9, 11, 10];
+
+            for (const m of order) {
+                const label = document.createElement('label');
+                label.className = 'minterm-checkbox';
+                label.innerHTML = `
+                    <input type="checkbox" data-minterm="${m}">
+                    <span>m${m}</span>
+                `;
+                grid.appendChild(label);
+            }
+        }
+
+        function updateMintermCheckboxes() {
+            document.querySelectorAll('.minterm-checkbox').forEach(label => {
+                const checkbox = label.querySelector('input');
+                const m = parseInt(checkbox.getAttribute('data-minterm'));
+                const cell = getCellByMinterm(m);
+                const value = cell.getAttribute('data-value');
+
+                checkbox.checked = (value === '1');
+                label.classList.toggle('checked', value === '1');
+            });
+        }
+
+        function handleMintermCheckboxChange(e) {
+            const checkbox = e.target;
+            const m = parseInt(checkbox.getAttribute('data-minterm'));
+            setMinterm(m, checkbox.checked ? '1' : '0');
+
+            const label = checkbox.closest('.minterm-checkbox');
+            label.classList.toggle('checked', checkbox.checked);
+        }
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+
+        function initializeKmap() {
+            // Cell click handlers
+            document.querySelectorAll('.kmap-cell').forEach(cell => {
+                cell.addEventListener('click', () => toggleCell(cell));
+            });
+
+            // Parse button
+            document.getElementById('parseBtn').addEventListener('click', () => {
+                const expr = document.getElementById('sopInput').value;
+                if (expr.trim()) {
+                    clearAllCells();
+                    const minterms = parseSOPExpression(expr);
+                    minterms.forEach(m => setMinterm(m, '1'));
+                    updateMintermCheckboxes();
+                }
+            });
+
+            // Clear button
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                document.getElementById('sopInput').value = '';
+                clearAllCells();
+            });
+
+            // Create minterm checkboxes
+            createMintermGrid();
+
+            // Minterm checkbox handlers
+            document.getElementById('mintermGrid').addEventListener('change', handleMintermCheckboxChange);
+
+            // Example expression handlers
+            document.querySelectorAll('.example-group').forEach(el => {
+                el.addEventListener('click', () => {
+                    const expr = el.getAttribute('data-expr');
+                    document.getElementById('sopInput').value = expr;
+                    clearAllCells();
+                    const minterms = parseSOPExpression(expr);
+                    minterms.forEach(m => setMinterm(m, '1'));
+                    updateMintermCheckboxes();
+                });
+            });
+
+            // Enter key in input
+            document.getElementById('sopInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('parseBtn').click();
+                }
+            });
+        }
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        initializeResponsive();
+        initializeKmap();
+    </script>
+</body>
+
+</html>
