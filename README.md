@@ -6,11 +6,13 @@ This is not meant as a public repo just yet.  Many of the graphics are undevelop
 
 ## AI & Prompting
 
+- [AI Adoption Infographic](ai-adoption-infographic.html)
 - [AI Context Infographic](ai-context-infographic.html)
 - [AI Context Infographic v2](ai-context-infographic-v2.html)
 - [AI Signal Noise Infographic](ai-signal-noise-infographic.html)
 - [AI Use Case Primitives](ai-use-case-primitives_1.html)
-- [Context Lifecycle Infographic](context-lifecycle.html)  
+- [Context Lifecycle Infographic](context-lifecycle.html)
+- [LLM Landscape](llm-landscape.html)
 - [Modes of Processing Infographic](modes-of-processing-infographic.html) (Fail)
 - [Prompting Strategies Infographic](prompting-strategies-infographic.html) (Fail)
 

@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The LLM Landscape - Beyond ChatGPT</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'DM Sans', sans-serif;
+            color: #e8e8e8;
+            background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0d0d14 100%);
+            display: flex;
+        }
+
+        /* Left Panel - Info Panel */
+        .info-panel {
+            width: 380px;
+            background: rgba(20, 20, 30, 0.95);
+            border-right: 1px solid rgba(255,255,255,0.08);
+            padding: 32px 28px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            margin-bottom: 24px;
+        }
+
+        .panel-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .panel-header .subtitle {
+            font-size: 14px;
+            color: #8b8b9e;
+            line-height: 1.5;
+        }
+
+        .info-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Default content when no model selected */
+        .default-content {
+            display: block;
+        }
+
+        .default-content.hidden {
+            display: none;
+        }
+
+        .intro-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #a0a0b0;
+            margin-bottom: 20px;
+        }
+
+        .intro-text strong {
+            color: #e0e0e8;
+        }
+
+        .legend {
+            margin-top: 16px;
+        }
+
+        .legend-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b6b7b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #b0b0c0;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-dot.frontier { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        .legend-dot.open { background: linear-gradient(135deg, #10b981, #34d399); }
+        .legend-dot.specialized { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+
+        /* Model detail card */
+        .model-detail {
+            display: none;
+        }
+
+        .model-detail.active {
+            display: block;
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .model-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .model-company {
+            font-size: 14px;
+            color: #8b8b9e;
+            margin-bottom: 16px;
+        }
+
+        .model-tier {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .model-tier.frontier {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .model-tier.open {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .model-tier.specialized {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .superpower {
+            font-size: 17px;
+            font-weight: 600;
+            color: #e8e8f0;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .model-description {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #9090a0;
+            margin-bottom: 20px;
+        }
+
+        .model-specs {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .spec-row:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            font-size: 13px;
+            color: #7070808;
+        }
+
+        .spec-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #d0d0e0;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .close-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #6b6b7b;
+            cursor: pointer;
+            transition: color 0.2s;
+            margin-top: 8px;
+        }
+
+        .close-detail:hover {
+            color: #a0a0b0;
+        }
+
+        /* Glossary section */
+        .glossary {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .glossary-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b6b7b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+
+        .glossary-item {
+            margin-bottom: 14px;
+        }
+
+        .glossary-term {
+            font-size: 13px;
+            font-weight: 600;
+            color: #c0c0d0;
+            margin-bottom: 4px;
+        }
+
+        .glossary-def {
+            font-size: 12px;
+            color: #808090;
+            line-height: 1.5;
+        }
+
+        /* Main quadrant area */
+        .main-area {
+            flex: 1;
+            padding: 40px 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .main-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .main-subtitle {
+            font-size: 16px;
+            color: #7070808;
+        }
+
+        .quadrant-container {
+            flex: 1;
+            position: relative;
+            margin: 0 40px;
+        }
+
+        /* Quadrant grid */
+        .quadrant-grid {
+            position: absolute;
+            inset: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: 
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Axis lines */
+        .axis-x {
+            position: absolute;
+            left: 50px;
+            right: 50px;
+            top: 50%;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                rgba(16, 185, 129, 0.6) 0%, 
+                rgba(255,255,255,0.3) 50%, 
+                rgba(99, 102, 241, 0.6) 100%
+            );
+        }
+
+        .axis-y {
+            position: absolute;
+            top: 50px;
+            bottom: 50px;
+            left: 50%;
+            width: 2px;
+            background: linear-gradient(180deg, 
+                rgba(255,255,255,0.4) 0%, 
+                rgba(255,255,255,0.2) 50%, 
+                rgba(245, 158, 11, 0.5) 100%
+            );
+        }
+
+        /* Axis labels */
+        .axis-label {
+            position: absolute;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .axis-label.left {
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg) translateX(-50%);
+            transform-origin: left center;
+            color: #10b981;
+        }
+
+        .axis-label.right {
+            right: 50px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg) translateX(50%);
+            transform-origin: right center;
+            color: #8b5cf6;
+        }
+
+        .axis-label.top {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #a0a0b0;
+        }
+
+        .axis-label.bottom {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #f59e0b;
+        }
+
+        /* Quadrant zone labels */
+        .zone-label {
+            position: absolute;
+            font-size: 11px;
+            color: rgba(255,255,255,0.15);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .zone-label.tl { top: 70px; left: 70px; }
+        .zone-label.tr { top: 70px; right: 70px; text-align: right; }
+        .zone-label.bl { bottom: 70px; left: 70px; }
+        .zone-label.br { bottom: 70px; right: 70px; text-align: right; }
+
+        /* Model nodes */
+        .model-node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .model-node:hover {
+            z-index: 20;
+        }
+
+        .model-node:hover .node-dot {
+            transform: scale(1.3);
+            box-shadow: 0 0 30px currentColor;
+        }
+
+        .model-node:hover .node-label {
+            opacity: 1;
+            color: #fff;
+        }
+
+        .model-node.active .node-dot {
+            transform: scale(1.4);
+            box-shadow: 0 0 40px currentColor;
+        }
+
+        .model-node.active .node-label {
+            opacity: 1;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .node-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            margin: 0 auto 6px;
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .model-node.frontier .node-dot {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #8b5cf6;
+        }
+
+        .model-node.open .node-dot {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: #10b981;
+        }
+
+        .model-node.specialized .node-dot {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #f59e0b;
+        }
+
+        .node-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #a0a0b0;
+            white-space: nowrap;
+            text-align: center;
+            opacity: 0.85;
+            transition: all 0.2s ease;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        /* Instruction hint */
+        .hint {
+            position: absolute;
+            bottom: 30px;
+            right: 60px;
+            font-size: 13px;
+            color: #505060;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hint-icon {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #404050;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
+
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: #404050;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            
+            <!-- Left Info Panel -->
+            <div class="info-panel">
+                <div class="panel-header">
+                    <h1>The LLM Landscape</h1>
+                    <p class="subtitle">Understanding AI models beyond the familiar chatbots</p>
+                </div>
+
+                <div class="info-content">
+                    <!-- Default content shown when no model selected -->
+                    <div class="default-content" id="defaultContent">
+                        <p class="intro-text">
+                            When people think of AI, they often think of <strong>ChatGPT</strong>, <strong>Gemini</strong>, or <strong>Copilot</strong>. But these are just the tip of the iceberg.
+                        </p>
+                        <p class="intro-text">
+                            The world of Large Language Models (LLMs) includes dozens of powerful models from companies around the globe—each with different strengths, trade-offs, and ways you can access them.
+                        </p>
+                        <p class="intro-text">
+                            <strong>Click any model</strong> on the quadrant to learn more about it.
+                        </p>
+
+                        <div class="legend">
+                            <div class="legend-title">Model Categories</div>
+                            <div class="legend-item">
+                                <span class="legend-dot frontier"></span>
+                                <span>Frontier Proprietary</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot open"></span>
+                                <span>Open Weights</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot specialized"></span>
+                                <span>Specialized / Niche</span>
+                            </div>
+                        </div>
+
+                        <div class="glossary">
+                            <div class="glossary-title">Key Terms</div>
+                            
+                            <div class="glossary-item">
+                                <div class="glossary-term">Large Language Model (LLM)</div>
+                                <div class="glossary-def">An AI trained on massive amounts of text to understand and generate human-like language.</div>
+                            </div>
+                            
+                            <div class="glossary-item">
+                                <div class="glossary-term">Open Weights</div>
+                                <div class="glossary-def">The model's learned parameters can be downloaded, run on your own hardware, and fine-tuned (additional training) for your specific needs.</div>
+                            </div>
+                            
+                            <div class="glossary-item">
+                                <div class="glossary-term">Proprietary</div>
+                                <div class="glossary-def">You can only access the model through the company's website or API. The model itself stays on their servers.</div>
+                            </div>
+                            
+                            <div class="glossary-item">
+                                <div class="glossary-term">Context Window</div>
+                                <div class="glossary-def">How much text the model can "remember" at once. A 128K window can hold roughly a 300-page book.</div>
+                            </div>
+
+                            <div class="glossary-item">
+                                <div class="glossary-term">Parameters</div>
+                                <div class="glossary-def">The number of adjustable values in the model. More parameters generally means more capable, but also more expensive to run.</div>
+                            </div>
+
+                            <div class="glossary-item">
+                                <div class="glossary-term">Training</div>
+                                <div class="glossary-def">The process of teaching a model by exposing it to massive amounts of data. Training requires enormous computing power and can cost millions of dollars.</div>
+                            </div>
+
+                            <div class="glossary-item">
+                                <div class="glossary-term">Inference</div>
+                                <div class="glossary-def">Using a trained model to generate responses. When you chat with an AI, you're running inference. Much cheaper than training, but still requires significant computing power.</div>
+                            </div>
+
+                            <div class="glossary-item">
+                                <div class="glossary-term">API (Application Programming Interface)</div>
+                                <div class="glossary-def">A way for software to talk to the AI. Developers use APIs to build apps powered by AI. API access is typically priced per token—you pay for what you use.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Model detail cards (hidden by default) -->
+                    <div class="model-detail" id="detail-gpt5">
+                        <div class="model-name">GPT-5.2</div>
+                        <div class="model-company">OpenAI</div>
+                        <span class="model-tier frontier">Frontier Proprietary</span>
+                        <div class="superpower">Best-in-class general reasoning & ecosystem integration</div>
+                        <div class="model-description">
+                            The model behind ChatGPT. GPT-5 excels at complex reasoning, coding, writing, and multi-step problem solving. It's deeply integrated into Microsoft products and has the largest developer ecosystem.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">API / ChatGPT</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">128K tokens</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Multimodal</span>
+                                <span class="spec-value">Text, Images, Audio</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-gemini">
+                        <div class="model-name">Gemini 3 Pro</div>
+                        <div class="model-company">Google DeepMind</div>
+                        <span class="model-tier frontier">Frontier Proprietary</span>
+                        <div class="superpower">Multimodal champion with massive context window</div>
+                        <div class="model-description">
+                            Google's flagship model can process text, images, video, and audio natively. Its 1 million token context window means it can analyze entire codebases or books in a single conversation.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">API / Gemini App</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">1M tokens</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Multimodal</span>
+                                <span class="spec-value">Text, Images, Video, Audio</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-claude">
+                        <div class="model-name">Opus 4.5</div>
+                        <div class="model-company">Anthropic</div>
+                        <span class="model-tier frontier">Frontier Proprietary</span>
+                        <div class="superpower">Nuanced writing & reliable agentic coding</div>
+                        <div class="model-description">
+                            Known for thoughtful, nuanced responses and strong safety alignment. Claude excels at long-form writing, complex analysis, and working as an autonomous coding assistant that can use tools and browse the web.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">API / Claude.ai</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">200K tokens</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Multimodal</span>
+                                <span class="spec-value">Text, Images, PDFs</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-grok">
+                        <div class="model-name">Grok 4.1</div>
+                        <div class="model-company">xAI</div>
+                        <span class="model-tier frontier">Frontier Proprietary</span>
+                        <div class="superpower">Real-time world knowledge via X integration</div>
+                        <div class="model-description">
+                            Created by Elon Musk's xAI, Grok has unique access to real-time data from X (formerly Twitter). This lets it answer questions about current events and trending topics that other models can't access.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">API / X / Grok.com</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">2M tokens (Fast)</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Multimodal</span>
+                                <span class="spec-value">Text, Images, Voice</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-copilot">
+                        <div class="model-name">Microsoft Copilot</div>
+                        <div class="model-company">Microsoft</div>
+                        <span class="model-tier frontier">Frontier Proprietary</span>
+                        <div class="superpower">Partnership model: integrates others' AI into Microsoft products</div>
+                        <div class="model-description">
+                            Unlike the others on this chart, Microsoft doesn't build its own large language models. Instead, Copilot is powered by partnerships—primarily with OpenAI (GPT models). This lets Microsoft embed AI across Office, Windows, Edge, and GitHub without the massive R&D investment of training frontier models.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Powered By</span>
+                                <span class="spec-value">OpenAI GPT models</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Windows, Office, Edge, Bing</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Strategy</span>
+                                <span class="spec-value">Partnership, not training</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Small Models</span>
+                                <span class="spec-value">Phi series (in-house)</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-llama">
+                        <div class="model-name">Llama 4 Maverick</div>
+                        <div class="model-company">Meta</div>
+                        <span class="model-tier open">Open Weights</span>
+                        <div class="superpower">The industry standard for local deployment</div>
+                        <div class="model-description">
+                            Meta's open-weight model that you can download and run yourself. Maverick uses a "mixture of experts" architecture—only activating 17B of its 400B parameters per query, making it efficient yet powerful.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Download / Self-host</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Parameters</span>
+                                <span class="spec-value">17B active / 400B total</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">1M tokens</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">License</span>
+                                <span class="spec-value">Llama Community</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-deepseek">
+                        <div class="model-name">DeepSeek V3.2</div>
+                        <div class="model-company">DeepSeek (China)</div>
+                        <span class="model-tier open">Open Weights</span>
+                        <div class="superpower">Massive efficiency with frontier-level reasoning</div>
+                        <div class="model-description">
+                            A Chinese model that shocked the industry by matching GPT-4 level performance at a fraction of the training cost. Released under the permissive MIT license, it's become a favorite for researchers and companies seeking cost-effective AI.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Download / Self-host</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Parameters</span>
+                                <span class="spec-value">37B active / 671B total</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">128K tokens</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">License</span>
+                                <span class="spec-value">MIT (fully open)</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-qwen">
+                        <div class="model-name">Qwen 3</div>
+                        <div class="model-company">Alibaba (China)</div>
+                        <span class="model-tier open">Open Weights</span>
+                        <div class="superpower">Dominant in math, coding & multilingual tasks</div>
+                        <div class="model-description">
+                            Alibaba's Qwen family has become the most downloaded open model in the world. Trained on 36 trillion tokens across 119 languages, it excels at mathematical reasoning and code generation.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Download / Self-host</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Parameters</span>
+                                <span class="spec-value">22B active / 235B total</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Languages</span>
+                                <span class="spec-value">119 languages</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">License</span>
+                                <span class="spec-value">Apache 2.0 (open)</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-gptoss">
+                        <div class="model-name">GPT-OSS</div>
+                        <div class="model-company">OpenAI</div>
+                        <span class="model-tier open">Open Weights</span>
+                        <div class="superpower">OpenAI's first open weights since 2019—reasoning-focused</div>
+                        <div class="model-description">
+                            In August 2025, OpenAI surprised everyone by releasing open-weight models for the first time since GPT-2. Available under the permissive Apache 2.0 license, these reasoning-focused models can run on a single GPU. A major strategic shift after years of being called "ClosedAI."
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Download / Self-host</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Sizes</span>
+                                <span class="spec-value">120B and 20B variants</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Hardware</span>
+                                <span class="spec-value">1 GPU (80GB) or 16GB RAM</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">License</span>
+                                <span class="spec-value">Apache 2.0 (fully open)</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-gemma">
+                        <div class="model-name">Gemma 3</div>
+                        <div class="model-company">Google DeepMind</div>
+                        <span class="model-tier open">Open Weights</span>
+                        <div class="superpower">Google's open model—multimodal with 128K context</div>
+                        <div class="model-description">
+                            Google's lightweight open models built from the same technology as Gemini. Gemma 3 supports images and text input, handles 140+ languages, and can run on everything from phones to gaming GPUs. Available in sizes from 270M to 27B parameters.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Download / Self-host</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Sizes</span>
+                                <span class="spec-value">270M to 27B parameters</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">128K tokens</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Features</span>
+                                <span class="spec-value">Multimodal, 140+ languages</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-mistral">
+                        <div class="model-name">Mistral Small 3</div>
+                        <div class="model-company">Mistral AI (France)</div>
+                        <span class="model-tier specialized">Specialized</span>
+                        <div class="superpower">Extreme speed for low-latency applications</div>
+                        <div class="model-description">
+                            A French company's speed-optimized model that generates 150 tokens per second. Small enough to run on a single GPU or a MacBook with 32GB RAM, yet competitive with models 3x its size.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Download / Self-host</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Parameters</span>
+                                <span class="spec-value">24B</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Speed</span>
+                                <span class="spec-value">~150 tokens/sec</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">License</span>
+                                <span class="spec-value">Apache 2.0 (open)</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-phi">
+                        <div class="model-name">Phi-4</div>
+                        <div class="model-company">Microsoft</div>
+                        <span class="model-tier specialized">Specialized</span>
+                        <div class="superpower">High-end reasoning in a tiny, mobile-friendly package</div>
+                        <div class="model-description">
+                            Microsoft's "small language model" proves that bigger isn't always better. At just 3.8B parameters, Phi-4 rivals much larger models on math and reasoning—small enough to run on a phone.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">Download / Self-host</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Parameters</span>
+                                <span class="spec-value">3.8B - 14B</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Best For</span>
+                                <span class="spec-value">Math, Reasoning, Mobile</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">License</span>
+                                <span class="spec-value">MIT (fully open)</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-command">
+                        <div class="model-name">Command R+</div>
+                        <div class="model-company">Cohere</div>
+                        <span class="model-tier specialized">Specialized</span>
+                        <div class="superpower">Optimized specifically for Enterprise RAG</div>
+                        <div class="model-description">
+                            Built for businesses that need AI to answer questions from their own documents. Command R+ specializes in "retrieval-augmented generation"—finding relevant info from databases and citing its sources.
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Access</span>
+                                <span class="spec-value">API only</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Context</span>
+                                <span class="spec-value">128K tokens</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Best For</span>
+                                <span class="spec-value">Enterprise search & RAG</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Languages</span>
+                                <span class="spec-value">10 business languages</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                    <div class="model-detail" id="detail-perplexity">
+                        <div class="model-name">Perplexity</div>
+                        <div class="model-company">Perplexity AI</div>
+                        <span class="model-tier specialized">Specialized</span>
+                        <div class="superpower">AI-powered search engine with citations</div>
+                        <div class="model-description">
+                            Perplexity isn't a model—it's a search product built on top of multiple models (including Claude and GPT). Their innovation is combining AI with real-time web search, always citing sources. Think of it as "Google meets ChatGPT."
+                        </div>
+                        <div class="model-specs">
+                            <div class="spec-row">
+                                <span class="spec-label">Type</span>
+                                <span class="spec-value">Product, not a model</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Powered By</span>
+                                <span class="spec-value">Claude, GPT, + own models</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Best For</span>
+                                <span class="spec-value">Research & fact-finding</span>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Key Feature</span>
+                                <span class="spec-value">Always cites sources</span>
+                            </div>
+                        </div>
+                        <div class="close-detail" onclick="closeDetail()">← Back to overview</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Main Quadrant Area -->
+            <div class="main-area">
+                <div class="main-header">
+                    <h2 class="main-title">Early 2026 Model Landscape</h2>
+                    <p class="main-subtitle">Position reflects access type (open vs. proprietary) and purpose (general vs. specialized)</p>
+                </div>
+
+                <div class="quadrant-container">
+                    <!-- Grid background -->
+                    <div class="quadrant-grid"></div>
+                    
+                    <!-- Axes -->
+                    <div class="axis-x"></div>
+                    <div class="axis-y"></div>
+
+                    <!-- Axis labels -->
+                    <div class="axis-label left">Open Weights<br><span style="font-size:10px;opacity:0.7">Run it yourself</span></div>
+                    <div class="axis-label right">Proprietary<br><span style="font-size:10px;opacity:0.7">API access only</span></div>
+                    <div class="axis-label top">General Purpose</div>
+                    <div class="axis-label bottom">Specialized</div>
+
+                    <!-- Zone labels -->
+                    <div class="zone-label tl">Open & General</div>
+                    <div class="zone-label tr">Proprietary & General</div>
+                    <div class="zone-label bl">Open & Specialized</div>
+                    <div class="zone-label br">Proprietary & Specialized</div>
+
+                    <!-- Model nodes - positions as percentages from top-left of quadrant area -->
+                    <!-- Frontier Proprietary (top-right quadrant) -->
+                    <div class="model-node frontier" style="left: 75%; top: 22%;" onclick="showDetail('gpt5')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">GPT-5.2</div>
+                    </div>
+
+                    <div class="model-node frontier" style="left: 82%; top: 28%;" onclick="showDetail('gemini')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Gemini 3</div>
+                    </div>
+
+                    <div class="model-node frontier" style="left: 70%; top: 32%;" onclick="showDetail('claude')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Opus 4.5</div>
+                    </div>
+
+                    <div class="model-node frontier" style="left: 78%; top: 38%;" onclick="showDetail('grok')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Grok 4.1</div>
+                    </div>
+
+                    <div class="model-node frontier" style="left: 85%; top: 45%;" onclick="showDetail('copilot')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Copilot</div>
+                    </div>
+
+                    <!-- Open Weights (top-left quadrant) -->
+                    <div class="model-node open" style="left: 25%; top: 22%;" onclick="showDetail('llama')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Llama 4</div>
+                    </div>
+
+                    <div class="model-node open" style="left: 32%; top: 28%;" onclick="showDetail('deepseek')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">DeepSeek V3</div>
+                    </div>
+
+                    <div class="model-node open" style="left: 18%; top: 34%;" onclick="showDetail('qwen')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Qwen 3</div>
+                    </div>
+
+                    <div class="model-node open" style="left: 38%; top: 24%;" onclick="showDetail('gptoss')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">GPT-OSS</div>
+                    </div>
+
+                    <div class="model-node open" style="left: 28%; top: 40%;" onclick="showDetail('gemma')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Gemma 3</div>
+                    </div>
+
+                    <!-- Specialized (bottom quadrants) -->
+                    <div class="model-node specialized" style="left: 28%; top: 72%;" onclick="showDetail('mistral')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Mistral Small</div>
+                    </div>
+
+                    <div class="model-node specialized" style="left: 22%; top: 78%;" onclick="showDetail('phi')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Phi-4</div>
+                    </div>
+
+                    <div class="model-node specialized" style="left: 72%; top: 75%;" onclick="showDetail('command')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Command R+</div>
+                    </div>
+
+                    <div class="model-node specialized" style="left: 80%; top: 68%;" onclick="showDetail('perplexity')">
+                        <div class="node-dot"></div>
+                        <div class="node-label">Perplexity</div>
+                    </div>
+
+                    <!-- Hint -->
+                    <div class="hint">
+                        <span class="hint-icon">👆</span>
+                        <span>Click a model to learn more</span>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Snapshot as of Early 2026 • This landscape changes rapidly
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // High-DPI aware auto-resize system
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        // Initialize responsive system
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Model detail interaction
+        let activeModel = null;
+
+        function showDetail(modelId) {
+            // Hide default content
+            document.getElementById('defaultContent').classList.add('hidden');
+            
+            // Hide all detail cards
+            document.querySelectorAll('.model-detail').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Remove active state from all nodes
+            document.querySelectorAll('.model-node').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Show selected detail
+            const detailEl = document.getElementById('detail-' + modelId);
+            if (detailEl) {
+                detailEl.classList.add('active');
+            }
+
+            // Add active state to clicked node
+            event.currentTarget.classList.add('active');
+            activeModel = modelId;
+        }
+
+        function closeDetail() {
+            // Show default content
+            document.getElementById('defaultContent').classList.remove('hidden');
+            
+            // Hide all detail cards
+            document.querySelectorAll('.model-detail').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Remove active state from all nodes
+            document.querySelectorAll('.model-node').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            activeModel = null;
+        }
+
+        // Click outside to close detail
+        document.querySelector('.quadrant-container').addEventListener('click', function(e) {
+            if (e.target === this || e.target.classList.contains('quadrant-grid')) {
+                closeDetail();
+            }
+        });
+    </script>
+</body>
+
+</html>
