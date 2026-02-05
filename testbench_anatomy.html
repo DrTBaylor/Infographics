@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testbench Anatomy: Interactive Tutorial</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #0a192f 100%);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin: 8px 0 12px 0;
+            font-size: 1.3em;
+        }
+
+        .legend {
+            text-align: center;
+            color: #81c784;
+            margin: 0 0 16px 0;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .legend-box {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: rgba(76, 175, 80, 0.25);
+            border-left: 4px solid #4caf50;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            display: flex;
+            gap: 8px;
+            background: rgba(13, 27, 42, 0.9);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 160px;
+            padding: 14px 12px;
+            background: transparent;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: #90a4ae;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover {
+            background: rgba(79, 195, 247, 0.1);
+            color: #cfd8dc;
+        }
+
+        .tab.active {
+            background: #1a237e;
+            border-color: #4fc3f7;
+            color: #fff;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            background: #0d1b2a;
+            border-radius: 6px;
+            height: 10px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+            width: 20%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        /* Main Content */
+        .tab-content {
+            display: none;
+            flex: 1;
+            gap: 20px;
+        }
+
+        .tab-content.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .panel {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            color: #4fc3f7;
+            margin-bottom: 12px;
+            font-size: 1.4em;
+        }
+
+        /* Code Display */
+        pre {
+            background: #0a1524;
+            border: 2px solid #37474f;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 0;
+            color: #c5cae9;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1.15em;
+            line-height: 1.4;
+            overflow: auto;
+            flex: 1;
+        }
+
+        /* Syntax Highlighting */
+        .kw { color: #c792ea; font-weight: 600; }
+        .type { color: #82aaff; }
+        .num { color: #f78c6c; }
+        .str { color: #c3e88d; }
+        .cmt { color: #546e7a; font-style: italic; }
+        .fn { color: #82aaff; }
+        .mod { color: #ffcb6b; }
+        .sig { color: #89ddff; }
+
+        .code-line {
+            display: block;
+            padding: 0;
+            transition: background 0.2s;
+        }
+
+        .code-line.highlight {
+            background: rgba(79, 195, 247, 0.15);
+            border-left: 4px solid #4fc3f7;
+            margin-left: -20px;
+            padding-left: 16px;
+        }
+
+        .code-line:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .code-line.dimmed {
+            opacity: 0.4;
+        }
+
+        .code-line.todo {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 4px solid #4caf50;
+            margin-left: -20px;
+            padding-left: 16px;
+        }
+
+        .code-line.tv.active {
+            background: rgba(255, 235, 59, 0.3);
+            border-left: 5px solid #ffeb3b;
+            margin-left: -20px;
+            padding-left: 15px;
+            box-shadow: 0 0 12px rgba(255, 235, 59, 0.5);
+        }
+
+        /* Explanation Box */
+        .explain {
+            background: rgba(79, 195, 247, 0.1);
+            border: 2px solid #4fc3f7;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-top: 16px;
+            font-size: 1.3em;
+            line-height: 1.6;
+        }
+
+        .explain strong {
+            color: #4fc3f7;
+            font-size: 1.1em;
+        }
+
+        .explain code {
+            font-size: 1.1em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        /* SVG Container */
+        .svg-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0a1524;
+            border-radius: 12px;
+            border: 2px solid #37474f;
+            min-height: 380px;
+        }
+
+        svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* SVG Styling */
+        .box {
+            fill: #10263d;
+            stroke: #4fc3f7;
+            stroke-width: 2;
+            rx: 8;
+        }
+
+        .box-tb {
+            fill: #0d1b2a;
+            stroke: #ffb74d;
+            stroke-width: 2;
+        }
+
+        .box-uut {
+            fill: #0d1b2a;
+            stroke: #7e57c2;
+            stroke-width: 2;
+        }
+
+        .label {
+            fill: #e0e0e0;
+            font-size: 14px;
+            font-weight: 600;
+            text-anchor: middle;
+        }
+
+        .label-small {
+            fill: #90a4ae;
+            font-size: 11px;
+            text-anchor: middle;
+        }
+
+        .arrow {
+            stroke: #4fc3f7;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowHead);
+        }
+
+        .arrow-input {
+            stroke: #ffb74d;
+        }
+
+        .arrow-output {
+            stroke: #7e57c2;
+        }
+
+        .highlight-box {
+            fill: rgba(79, 195, 247, 0.2);
+            stroke: #4fc3f7;
+            stroke-width: 3;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Interactive Elements */
+        .clickable {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clickable:hover {
+            filter: brightness(1.2);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #1a237e;
+            color: #fff;
+            border: 2px solid #5c6bc0;
+            border-radius: 8px;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.15s ease;
+        }
+
+        button:hover {
+            background: #283593;
+            border-color: #4fc3f7;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.primary {
+            background: #00897b;
+            border-color: #26a69a;
+        }
+
+        button.primary:hover {
+            background: #00796b;
+        }
+
+        /* Truth Table */
+        .truth-table {
+            border-collapse: collapse;
+            font-family: 'Consolas', monospace;
+            font-size: 1.2em;
+            margin: 16px 0;
+        }
+
+        .truth-table th, .truth-table td {
+            border: 2px solid #546e7a;
+            padding: 12px 20px;
+            text-align: center;
+        }
+
+        .truth-table th {
+            background: #1a237e;
+            color: #fff;
+        }
+
+        .truth-table tr.current {
+            background: rgba(79, 195, 247, 0.2);
+        }
+
+        .truth-table .pass {
+            color: #4caf50;
+        }
+
+        .truth-table .fail {
+            color: #f44336;
+        }
+
+        /* Navigation Footer */
+        .nav-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 16px 24px;
+            background: rgba(13, 27, 42, 0.9);
+            border-radius: 12px;
+        }
+
+        .step-indicator {
+            color: #90a4ae;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        /* Comparator styling */
+        .comparator-box {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            justify-content: center;
+            margin: 24px 0;
+        }
+
+        .value-box {
+            background: #0a1524;
+            border: 3px solid #546e7a;
+            border-radius: 10px;
+            padding: 20px 35px;
+            font-family: 'Consolas', monospace;
+            font-size: 2em;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .value-box.match {
+            border-color: #4caf50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .value-box.mismatch {
+            border-color: #f44336;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+        }
+
+        .result-badge {
+            padding: 14px 32px;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 1.4em;
+        }
+
+        .result-badge.pass {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            border: 2px solid #4caf50;
+        }
+
+        .result-badge.fail {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 2px solid #f44336;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .tab-content.active {
+                grid-template-columns: 1fr;
+            }
+            .tab {
+                min-width: 80px;
+                font-size: 0.75em;
+                padding: 8px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Testbench Anatomy</h1>
+    <p class="subtitle">Interactive guide to self-checking testbenches in Verilog</p>
+    <p class="legend"><span class="legend-box"></span> = You complete this code</p>
+
+    <!-- Tab Navigation -->
+    <div class="tab-bar">
+        <button class="tab active" data-tab="0">1. Signals</button>
+        <button class="tab" data-tab="1">2. Instantiation</button>
+        <button class="tab" data-tab="2">3. Initial Block</button>
+        <button class="tab" data-tab="3">4. Test Vectors</button>
+        <button class="tab" data-tab="4">5. Verification</button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Tab 1: Signal Declarations -->
+    <div class="tab-content active" id="tab-0">
+        <div class="panel">
+            <div class="panel-title">Signal Declarations</div>
+            <pre id="code-signals"><span class="code-line"><span class="kw">`timescale</span> 1ns/1ps       <span class="cmt">// time units</span></span>
+<span class="code-line"><span class="kw">module</span> <span class="mod">and_gate_tb</span>;      <span class="cmt">// no ports!</span></span>
+<span class="code-line todo" data-signal="reg">    <span class="kw">reg</span>  <span class="sig">a</span>, <span class="sig">b</span>;           <span class="cmt">// inputs (we drive)</span></span>
+<span class="code-line todo" data-signal="wire">    <span class="kw">wire</span> <span class="sig">y</span>;              <span class="cmt">// output (we observe)</span></span>
+<span class="code-line todo" data-signal="expected">    <span class="kw">wire</span> <span class="sig">expected</span>;       <span class="cmt">// correct answer</span></span>
+<span class="code-line todo">    <span class="kw">integer</span> error_count; <span class="cmt">// track failures</span></span>
+<span class="code-line">    ...</span>
+<span class="code-line"><span class="kw">endmodule</span>                <span class="cmt">// end testbench</span></span></pre>
+            <div class="explain">
+                <strong>Key Concept:</strong> In testbenches, use <code>reg</code> for signals you assign values to (inputs to UUT),
+                and <code>wire</code> for signals you observe (outputs from UUT).
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">Data Flow Visualization</div>
+            <div class="svg-container">
+                <svg viewBox="0 0 400 240" id="svg-signals">
+                    <defs>
+                        <marker id="arrowHead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#4fc3f7"/>
+                        </marker>
+                        <marker id="arrowOrange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ffb74d"/>
+                        </marker>
+                        <marker id="arrowPurple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#7e57c2"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Testbench Box -->
+                    <rect x="15" y="25" width="120" height="150" class="box box-tb" rx="8"/>
+                    <text x="75" y="45" class="label" fill="#ffb74d" font-size="13">Testbench</text>
+
+                    <!-- Signals in Testbench -->
+                    <text x="75" y="72" class="label-small">reg a, b</text>
+                    <rect x="30" y="58" width="90" height="22" fill="none" stroke="#ffb74d" stroke-width="1" rx="4"
+                          class="clickable" id="reg-box" onclick="highlightSignal('reg')"/>
+
+                    <text x="75" y="112" class="label-small">wire y</text>
+                    <rect x="30" y="98" width="90" height="22" fill="none" stroke="#7e57c2" stroke-width="1" rx="4"
+                          class="clickable" id="wire-box" onclick="highlightSignal('wire')"/>
+
+                    <text x="75" y="152" class="label-small">wire expected</text>
+                    <rect x="30" y="138" width="90" height="22" fill="none" stroke="#4fc3f7" stroke-width="1" rx="4"
+                          class="clickable" id="expected-box" onclick="highlightSignal('expected')"/>
+
+                    <!-- UUT Box -->
+                    <rect x="200" y="40" width="120" height="100" class="box box-uut" rx="8"/>
+                    <text x="260" y="60" class="label" fill="#7e57c2" font-size="13">UUT</text>
+                    <text x="260" y="75" class="label-small">(and_gate)</text>
+
+                    <!-- Port labels inside UUT -->
+                    <text x="215" y="100" fill="#ffb74d" font-size="11">a</text>
+                    <text x="215" y="120" fill="#ffb74d" font-size="11">b</text>
+                    <text x="305" y="110" fill="#7e57c2" font-size="11">y</text>
+
+                    <!-- Input Arrows: a and b -->
+                    <path d="M120 69 L200 95" class="arrow arrow-input" id="arrow-a" marker-end="url(#arrowOrange)"/>
+                    <path d="M120 69 L200 115" class="arrow arrow-input" id="arrow-b" marker-end="url(#arrowOrange)"/>
+
+                    <!-- Output Arrow: y exits right, goes down, returns left to testbench -->
+                    <path d="M320 107 L350 107 L350 180 L150 180 L150 109 L120 109" class="arrow arrow-output" id="arrow-y" marker-end="url(#arrowPurple)"/>
+
+                    <!-- Output label on the line -->
+                    <text x="358" y="145" fill="#7e57c2" font-size="10">y</text>
+
+                    <!-- Legend -->
+                    <rect x="15" y="215" width="12" height="12" fill="#ffb74d"/>
+                    <text x="32" y="225" fill="#90a4ae" font-size="10">reg (drives)</text>
+                    <rect x="110" y="215" width="12" height="12" fill="#7e57c2"/>
+                    <text x="127" y="225" fill="#90a4ae" font-size="10">wire (observes)</text>
+                </svg>
+            </div>
+            <div class="controls">
+                <button onclick="highlightSignal('reg')">Show reg flow</button>
+                <button onclick="highlightSignal('wire')">Show wire flow</button>
+                <button onclick="highlightSignal('clear')">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: UUT Instantiation -->
+    <div class="tab-content" id="tab-1">
+        <div class="panel">
+            <div class="panel-title">Module Instantiation</div>
+            <pre id="code-uut"><span class="code-line todo" id="inst-line">    <span class="mod">and_gate</span> <span class="sig">UUT</span> (   <span class="cmt">// module instance</span></span>
+<span class="code-line todo" data-port="a">        .<span class="sig">a</span>(<span class="sig">a</span>),        <span class="cmt">// connect port a</span></span>
+<span class="code-line todo" data-port="b">        .<span class="sig">b</span>(<span class="sig">b</span>),        <span class="cmt">// connect port b</span></span>
+<span class="code-line todo" data-port="y">        .<span class="sig">y</span>(<span class="sig">y</span>)         <span class="cmt">// connect port y</span></span>
+<span class="code-line todo">    );               <span class="cmt">// end instance</span></span></pre>
+            <div class="explain">
+                <strong>Syntax:</strong> <code>module_name instance_name (.port(signal), ...);</code><br><br>
+                Named port connections (<code>.port(signal)</code>) are preferred because they:
+                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                    <li>Make connections explicit and readable</li>
+                    <li>Allow ports in any order</li>
+                    <li>Prevent ordering bugs</li>
+                </ul>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">Port Connection Diagram</div>
+            <div class="svg-container">
+                <svg viewBox="0 0 400 240" id="svg-uut">
+                    <defs>
+                        <marker id="arrow2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#4fc3f7"/>
+                        </marker>
+                        <marker id="arrowOrange2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ffb74d"/>
+                        </marker>
+                        <marker id="arrowPurple2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#7e57c2"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Connection lines (drawn first, behind boxes) -->
+                    <path d="M135 69 L200 95" stroke="#ffb74d" stroke-width="2" id="conn-a" stroke-dasharray="5,5" marker-end="url(#arrowOrange2)">
+                        <animate attributeName="stroke-dashoffset" from="10" to="0" dur="0.5s" repeatCount="indefinite"/>
+                    </path>
+                    <path d="M135 99 L200 115" stroke="#ffb74d" stroke-width="2" id="conn-b" stroke-dasharray="5,5" marker-end="url(#arrowOrange2)">
+                        <animate attributeName="stroke-dashoffset" from="10" to="0" dur="0.5s" repeatCount="indefinite"/>
+                    </path>
+                    <path d="M320 107 L350 107 L350 180 L150 180 L150 129 L135 129" stroke="#7e57c2" stroke-width="2" id="conn-y" stroke-dasharray="5,5" marker-end="url(#arrowPurple2)">
+                        <animate attributeName="stroke-dashoffset" from="0" to="10" dur="0.5s" repeatCount="indefinite"/>
+                    </path>
+
+                    <!-- Connection labels -->
+                    <text x="160" y="78" fill="#90a4ae" font-size="9">.a(a)</text>
+                    <text x="160" y="112" fill="#90a4ae" font-size="9">.b(b)</text>
+                    <text x="358" y="145" fill="#7e57c2" font-size="10">.y(y)</text>
+
+                    <!-- Testbench Box (drawn on top) -->
+                    <rect x="15" y="25" width="120" height="130" class="box box-tb" rx="8"/>
+                    <text x="75" y="45" class="label" fill="#ffb74d" font-size="13">Testbench</text>
+
+                    <!-- Signals in Testbench -->
+                    <text x="75" y="72" class="label-small">a (reg)</text>
+                    <rect x="30" y="58" width="90" height="22" fill="none" stroke="#ffb74d" stroke-width="1" rx="4" id="tb-a"/>
+
+                    <text x="75" y="102" class="label-small">b (reg)</text>
+                    <rect x="30" y="88" width="90" height="22" fill="none" stroke="#ffb74d" stroke-width="1" rx="4" id="tb-b"/>
+
+                    <text x="75" y="132" class="label-small">y (wire)</text>
+                    <rect x="30" y="118" width="90" height="22" fill="none" stroke="#7e57c2" stroke-width="1" rx="4" id="tb-y"/>
+
+                    <!-- UUT Box (drawn on top) -->
+                    <rect x="200" y="40" width="120" height="100" class="box box-uut" rx="8"/>
+                    <text x="260" y="60" class="label" fill="#7e57c2" font-size="13">UUT</text>
+                    <text x="260" y="75" class="label-small">(and_gate)</text>
+
+                    <!-- Port labels inside UUT -->
+                    <text x="215" y="100" fill="#ffb74d" font-size="11">.a</text>
+                    <text x="215" y="120" fill="#ffb74d" font-size="11">.b</text>
+                    <text x="305" y="110" fill="#7e57c2" font-size="11">.y</text>
+
+                    <!-- Legend -->
+                    <rect x="15" y="215" width="12" height="12" fill="#ffb74d"/>
+                    <text x="32" y="225" fill="#90a4ae" font-size="10">input (.port)</text>
+                    <rect x="120" y="215" width="12" height="12" fill="#7e57c2"/>
+                    <text x="137" y="225" fill="#90a4ae" font-size="10">output (.port)</text>
+                </svg>
+            </div>
+            <div class="explain">
+                Hover over code lines to see the corresponding connections light up in the diagram.
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 3: Initial Block -->
+    <div class="tab-content" id="tab-2">
+        <div class="panel">
+            <div class="panel-title">The Initial Block</div>
+            <pre id="code-initial"><span class="code-line" id="init-4">    <span class="kw">initial</span> <span class="kw">begin</span>              <span class="cmt">// runs once at t=0</span></span>
+<span class="code-line" id="init-5">        error_count = <span class="num">0</span>;        <span class="cmt">// reset counter</span></span>
+<span class="code-line" id="init-7">        <span class="fn">$display</span>(<span class="str">"Testing..."</span>);  <span class="cmt">// print header</span></span>
+<span class="code-line" id="init-11">        <span class="cmt">// test vectors here</span></span>
+<span class="code-line" id="init-13">        <span class="cmt">// report results here</span></span>
+<span class="code-line" id="init-15">        <span class="fn">$finish</span>;                <span class="cmt">// end simulation</span></span>
+<span class="code-line" id="init-16">    <span class="kw">end</span>                        <span class="cmt">// end initial</span></span></pre>
+            <div class="explain">
+                <strong>initial begin...end</strong> executes once at simulation start (time 0).<br><br>
+                <strong>$ = System Task</strong> — Built-in simulator commands:<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<code>$display</code> prints to console &nbsp;|&nbsp; <code>$finish</code> ends simulation
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">Execution Timeline</div>
+            <div class="svg-container">
+                <svg viewBox="0 0 400 240" id="svg-initial">
+                    <!-- Timeline -->
+                    <line x1="30" y1="200" x2="370" y2="200" stroke="#546e7a" stroke-width="2"/>
+                    <text x="200" y="230" class="label-small">Simulation Time →</text>
+
+                    <!-- Time markers -->
+                    <line x1="50" y1="195" x2="50" y2="205" stroke="#546e7a" stroke-width="2"/>
+                    <text x="50" y="220" class="label-small">t=0</text>
+
+                    <!-- Event boxes (clickable) -->
+                    <g class="clickable" onclick="selectEvent(1)">
+                        <rect x="40" y="30" width="70" height="40" fill="#10263d" stroke="#4fc3f7" rx="4" id="evt-1"/>
+                        <text x="75" y="45" fill="#e0e0e0" font-size="9" text-anchor="middle" pointer-events="none">Initialize</text>
+                        <text x="75" y="60" fill="#90a4ae" font-size="8" text-anchor="middle" pointer-events="none">error_count=0</text>
+                    </g>
+
+                    <g class="clickable" onclick="selectEvent(2)">
+                        <rect x="120" y="30" width="70" height="40" fill="#10263d" stroke="#4fc3f7" rx="4" id="evt-2"/>
+                        <text x="155" y="45" fill="#e0e0e0" font-size="9" text-anchor="middle" pointer-events="none">Display</text>
+                        <text x="155" y="60" fill="#90a4ae" font-size="8" text-anchor="middle" pointer-events="none">Header</text>
+                    </g>
+
+                    <g class="clickable" onclick="selectEvent(3)">
+                        <rect x="200" y="30" width="70" height="40" fill="#10263d" stroke="#ffb74d" rx="4" id="evt-3"/>
+                        <text x="235" y="45" fill="#e0e0e0" font-size="9" text-anchor="middle" pointer-events="none">Test</text>
+                        <text x="235" y="60" fill="#90a4ae" font-size="8" text-anchor="middle" pointer-events="none">Vectors</text>
+                    </g>
+
+                    <g class="clickable" onclick="selectEvent(4)">
+                        <rect x="280" y="30" width="70" height="40" fill="#10263d" stroke="#4fc3f7" rx="4" id="evt-4"/>
+                        <text x="315" y="45" fill="#e0e0e0" font-size="9" text-anchor="middle" pointer-events="none">Results</text>
+                        <text x="315" y="60" fill="#90a4ae" font-size="8" text-anchor="middle" pointer-events="none">Summary</text>
+                    </g>
+
+                    <!-- Arrows -->
+                    <path d="M110 50 L120 50" stroke="#4fc3f7" stroke-width="2" marker-end="url(#arrow2)"/>
+                    <path d="M190 50 L200 50" stroke="#4fc3f7" stroke-width="2" marker-end="url(#arrow2)"/>
+                    <path d="M270 50 L280 50" stroke="#4fc3f7" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                    <!-- Execution pointer (no auto-animation) -->
+                    <polygon points="75,180 85,190 65,190" fill="#4caf50" id="exec-pointer"/>
+
+                    <!-- Console output -->
+                    <rect x="40" y="90" width="320" height="80" fill="#0a1524" stroke="#37474f" rx="4"/>
+                    <text x="50" y="110" fill="#90a4ae" font-size="10">Console Output:</text>
+                    <text x="50" y="130" fill="#4caf50" font-size="10" font-family="monospace" id="console-1"></text>
+                    <text x="50" y="145" fill="#4caf50" font-size="10" font-family="monospace" id="console-2"></text>
+                    <text x="50" y="160" fill="#4caf50" font-size="10" font-family="monospace" id="console-3"></text>
+                </svg>
+            </div>
+            <div class="controls">
+                <button onclick="resetInitial()">Reset</button>
+                <span style="color: #90a4ae; font-size: 1.1em; margin-left: 16px;">Click boxes above to step through</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 4: Test Vectors -->
+    <div class="tab-content" id="tab-3">
+        <div class="panel">
+            <div class="panel-title">Applying Test Vectors</div>
+            <pre id="code-vectors"><span class="code-line dimmed">    initial begin</span>
+<span class="code-line dimmed">        error_count = 0;</span>
+<span class="code-line dimmed">        $display("Testing...");</span>
+<span class="code-line"></span>
+<span class="code-line tv todo" data-idx="0">        {<span class="sig">a</span>,<span class="sig">b</span>}=<span class="num">2'b00</span>; <span class="kw">#10</span>; check_output(); <span class="cmt">// a=0, b=0</span></span>
+<span class="code-line tv todo" data-idx="1">        {<span class="sig">a</span>,<span class="sig">b</span>}=<span class="num">2'b01</span>; <span class="kw">#10</span>; check_output(); <span class="cmt">// a=0, b=1</span></span>
+<span class="code-line tv todo" data-idx="2">        {<span class="sig">a</span>,<span class="sig">b</span>}=<span class="num">2'b10</span>; <span class="kw">#10</span>; check_output(); <span class="cmt">// a=1, b=0</span></span>
+<span class="code-line tv todo" data-idx="3">        {<span class="sig">a</span>,<span class="sig">b</span>}=<span class="num">2'b11</span>; <span class="kw">#10</span>; check_output(); <span class="cmt">// a=1, b=1</span></span>
+<span class="code-line"></span>
+<span class="code-line dimmed">        // report results...</span>
+<span class="code-line dimmed">        $finish;</span>
+<span class="code-line dimmed">    end</span></pre>
+            <div class="explain">
+                <strong># = Delay</strong> — Pauses execution for specified time units.<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<code>#10</code> waits 10 time units for the output to stabilize before checking.<br><br>
+                <strong>{a, b}</strong> is concatenation — sets both inputs in one statement.
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">Truth Table Progress</div>
+            <table class="truth-table" id="truth-table">
+                <tr>
+                    <th>a</th>
+                    <th>b</th>
+                    <th>y (actual)</th>
+                    <th>expected</th>
+                    <th>Result</th>
+                </tr>
+                <tr id="row-0"><td>0</td><td>0</td><td>-</td><td>0</td><td>-</td></tr>
+                <tr id="row-1"><td>0</td><td>1</td><td>-</td><td>0</td><td>-</td></tr>
+                <tr id="row-2"><td>1</td><td>0</td><td>-</td><td>0</td><td>-</td></tr>
+                <tr id="row-3"><td>1</td><td>1</td><td>-</td><td>1</td><td>-</td></tr>
+            </table>
+            <div class="controls">
+                <button onclick="stepVector()" id="step-btn">Step</button>
+                <button onclick="runAllVectors()" class="primary">Run All</button>
+                <button onclick="resetVectors()">Reset</button>
+            </div>
+            <div id="vector-status" style="margin-top: 16px; color: #90a4ae; font-size: 1.15em;">
+                Click "Step" to apply test vectors one at a time.
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 5: Verification -->
+    <div class="tab-content" id="tab-4">
+        <div class="panel">
+            <div class="panel-title">Self-Checking Code</div>
+            <pre id="code-verify"><span class="code-line"><span class="kw">assign</span> <span class="sig">expected</span> = <span class="sig">a</span> & <span class="sig">b</span>;      <span class="cmt">// golden model</span></span>
+<span class="code-line"><span class="kw">task</span> check_output;             <span class="cmt">// reusable checker</span></span>
+<span class="code-line">    <span class="kw">if</span> (<span class="sig">y</span> !== <span class="sig">expected</span>) <span class="kw">begin</span>  <span class="cmt">// mismatch?</span></span>
+<span class="code-line">        <span class="fn">$display</span>(<span class="str">"FAIL"</span>);        <span class="cmt">// report error</span></span>
+<span class="code-line">        error_count = error_count + <span class="num">1</span>; <span class="cmt">// count it</span></span>
+<span class="code-line">    <span class="kw">end</span> <span class="kw">else</span>                    <span class="cmt">// match!</span></span>
+<span class="code-line">        <span class="fn">$display</span>(<span class="str">"PASS"</span>);        <span class="cmt">// report success</span></span>
+<span class="code-line"><span class="kw">endtask</span>                        <span class="cmt">// end task</span></span></pre>
+            <div class="explain">
+                <strong>Golden Model:</strong> <code>assign expected = a & b;</code> computes what y SHOULD be.<br>
+                <strong>Comparator:</strong> <code>y !== expected</code> checks for exact match (including X/Z states).
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">Live Comparison Demo</div>
+            <div style="text-align: center; padding: 24px;">
+                <div style="margin-bottom: 20px; color: #90a4ae; font-size: 1.3em;">
+                    Inputs: a = <span id="demo-a">0</span>, b = <span id="demo-b">0</span>
+                </div>
+                <div class="comparator-box">
+                    <div>
+                        <div style="color: #90a4ae; font-size: 1.1em; margin-bottom: 8px;">y (actual)</div>
+                        <div class="value-box" id="demo-y">0</div>
+                    </div>
+                    <div style="font-size: 2.5em; color: #4fc3f7;">===</div>
+                    <div>
+                        <div style="color: #90a4ae; font-size: 1.1em; margin-bottom: 8px;">expected</div>
+                        <div class="value-box" id="demo-expected">0</div>
+                    </div>
+                </div>
+                <div id="demo-result" class="result-badge pass" style="margin-top: 20px;">PASS</div>
+                <div id="demo-errors" style="margin-top: 16px; color: #90a4ae; font-size: 1.2em;">error_count = 0</div>
+            </div>
+            <div class="controls" style="justify-content: center;">
+                <button onclick="demoCorrect()">Test Correct UUT</button>
+                <button onclick="demoBuggy()">Test Buggy UUT</button>
+                <button onclick="demoReset()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Footer -->
+    <div class="nav-footer">
+        <button id="prevBtn" onclick="prevTab()">← Previous</button>
+        <span class="step-indicator" id="stepIndicator">Step 1 of 5</span>
+        <button id="nextBtn" onclick="nextTab()">Next →</button>
+    </div>
+
+    <script>
+        // Tab Management
+        let currentTab = 0;
+        const tabs = document.querySelectorAll('.tab');
+        const contents = document.querySelectorAll('.tab-content');
+
+        function switchTab(index) {
+            currentTab = index;
+            tabs.forEach((t, i) => t.classList.toggle('active', i === index));
+            contents.forEach((c, i) => c.classList.toggle('active', i === index));
+            updateProgress();
+            updateNavButtons();
+        }
+
+        const stepNames = [
+            'Signal Declarations',
+            'UUT Instantiation',
+            'Initial Block',
+            'Test Vectors',
+            'Verification'
+        ];
+
+        function updateProgress() {
+            const progress = ((currentTab + 1) / 5) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('stepIndicator').textContent = `Step ${currentTab + 1}: ${stepNames[currentTab]}`;
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').disabled = currentTab === 0;
+            document.getElementById('nextBtn').disabled = currentTab === 4;
+        }
+
+        function nextTab() {
+            if (currentTab < 4) switchTab(currentTab + 1);
+        }
+
+        function prevTab() {
+            if (currentTab > 0) switchTab(currentTab - 1);
+        }
+
+        // Tab click handlers
+        tabs.forEach((tab, i) => {
+            tab.addEventListener('click', () => switchTab(i));
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextTab();
+            if (e.key === 'ArrowLeft') prevTab();
+            if (e.key >= '1' && e.key <= '5') switchTab(parseInt(e.key) - 1);
+        });
+
+        // Tab 1: Signal highlighting
+        function highlightSignal(type) {
+            // Clear all highlights
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+            document.querySelectorAll('#svg-signals rect').forEach(el => el.style.stroke = '');
+            document.querySelectorAll('#svg-signals path, #svg-signals line').forEach(el => el.style.opacity = '0.3');
+
+            if (type === 'clear') {
+                document.querySelectorAll('#svg-signals path, #svg-signals line').forEach(el => el.style.opacity = '1');
+                return;
+            }
+
+            // Highlight code
+            document.querySelectorAll(`[data-signal="${type}"]`).forEach(el => el.classList.add('highlight'));
+
+            // Highlight diagram
+            if (type === 'reg') {
+                document.getElementById('arrow-a').style.opacity = '1';
+                document.getElementById('arrow-b').style.opacity = '1';
+                document.getElementById('reg-box').style.stroke = '#ffb74d';
+                document.getElementById('reg-box').style.strokeWidth = '3';
+            } else if (type === 'wire') {
+                document.getElementById('arrow-y').style.opacity = '1';
+                document.getElementById('wire-box').style.stroke = '#7e57c2';
+                document.getElementById('wire-box').style.strokeWidth = '3';
+            } else if (type === 'expected') {
+                document.getElementById('expected-box').style.stroke = '#4fc3f7';
+                document.getElementById('expected-box').style.strokeWidth = '3';
+            }
+        }
+
+        // Tab 3: Initial block - click to step through
+        const eventData = {
+            1: { line: 'init-5', pointer: 75, console: ['error_count = 0;', '', ''] },
+            2: { line: 'init-7', pointer: 155, console: ['error_count = 0;', 'Testing...', ''] },
+            3: { line: 'init-11', pointer: 235, console: ['error_count = 0;', 'Testing...', '// running tests...'] },
+            4: { line: 'init-15', pointer: 315, console: ['error_count = 0;', 'Testing...', '$finish;'] }
+        };
+
+        function selectEvent(num) {
+            resetInitial();
+
+            // Highlight selected box
+            const evt = document.getElementById(`evt-${num}`);
+            evt.style.fill = 'rgba(79, 195, 247, 0.3)';
+            evt.style.strokeWidth = '3';
+
+            // Highlight corresponding code line
+            const data = eventData[num];
+            if (data.line) {
+                document.getElementById(data.line).classList.add('highlight');
+            }
+
+            // Move execution pointer
+            const pointer = document.getElementById('exec-pointer');
+            pointer.setAttribute('points', `${data.pointer},180 ${data.pointer+10},190 ${data.pointer-10},190`);
+
+            // Update console output
+            document.getElementById('console-1').textContent = data.console[0];
+            document.getElementById('console-2').textContent = data.console[1];
+            document.getElementById('console-3').textContent = data.console[2];
+        }
+
+        function resetInitial() {
+            ['evt-1', 'evt-2', 'evt-3', 'evt-4'].forEach(id => {
+                const el = document.getElementById(id);
+                el.style.fill = '#10263d';
+                el.style.stroke = id === 'evt-3' ? '#ffb74d' : '#4fc3f7';
+                el.style.strokeWidth = '2';
+            });
+            document.querySelectorAll('#code-initial .code-line').forEach(el => el.classList.remove('highlight'));
+            document.getElementById('console-1').textContent = '';
+            document.getElementById('console-2').textContent = '';
+            document.getElementById('console-3').textContent = '';
+            const pointer = document.getElementById('exec-pointer');
+            pointer.setAttribute('points', '75,180 85,190 65,190');
+        }
+
+        // Tab 4: Test vectors
+        let vectorIdx = -1;
+        const andGate = (a, b) => a & b;
+
+        function stepVector() {
+            vectorIdx++;
+            if (vectorIdx > 3) {
+                document.getElementById('vector-status').innerHTML = '<span style="color: #4caf50;">All tests complete! 4/4 passed.</span>';
+                return;
+            }
+
+            // Highlight code line (yellow active state)
+            document.querySelectorAll('.tv').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.tv[data-idx="${vectorIdx}"]`).classList.add('active');
+
+            // Update table
+            const row = document.getElementById(`row-${vectorIdx}`);
+            const cells = row.cells;
+            const a = parseInt(cells[0].textContent);
+            const b = parseInt(cells[1].textContent);
+            const y = andGate(a, b);
+            const expected = parseInt(cells[3].textContent);
+
+            cells[2].textContent = y;
+            cells[4].textContent = y === expected ? '✓' : '✗';
+            cells[4].className = y === expected ? 'pass' : 'fail';
+
+            // Highlight current row
+            document.querySelectorAll('.truth-table tr').forEach(r => r.classList.remove('current'));
+            row.classList.add('current');
+
+            document.getElementById('vector-status').textContent = `Testing vector ${vectorIdx + 1}/4: a=${a}, b=${b}`;
+        }
+
+        function runAllVectors() {
+            resetVectors();
+            let i = 0;
+            const interval = setInterval(() => {
+                stepVector();
+                i++;
+                if (i >= 4) clearInterval(interval);
+            }, 500);
+        }
+
+        function resetVectors() {
+            vectorIdx = -1;
+            document.querySelectorAll('.tv').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.truth-table tr').forEach(r => r.classList.remove('current'));
+            for (let i = 0; i < 4; i++) {
+                const row = document.getElementById(`row-${i}`);
+                row.cells[2].textContent = '-';
+                row.cells[4].textContent = '-';
+                row.cells[4].className = '';
+            }
+            document.getElementById('vector-status').textContent = 'Click "Step" to apply test vectors one at a time.';
+        }
+
+        // Tab 5: Verification demo
+        let demoErrors = 0;
+
+        function runDemo(buggy) {
+            const testCases = [[0,0], [0,1], [1,0], [1,1]];
+            let i = 0;
+
+            const interval = setInterval(() => {
+                if (i >= 4) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                const [a, b] = testCases[i];
+                const expected = a & b;
+                let y = expected;
+
+                // Buggy UUT: OR instead of AND
+                if (buggy) {
+                    y = a | b;
+                }
+
+                document.getElementById('demo-a').textContent = a;
+                document.getElementById('demo-b').textContent = b;
+                document.getElementById('demo-y').textContent = y;
+                document.getElementById('demo-expected').textContent = expected;
+
+                const yBox = document.getElementById('demo-y');
+                const expBox = document.getElementById('demo-expected');
+                const result = document.getElementById('demo-result');
+
+                if (y === expected) {
+                    yBox.className = 'value-box match';
+                    expBox.className = 'value-box match';
+                    result.className = 'result-badge pass';
+                    result.textContent = 'PASS';
+                } else {
+                    yBox.className = 'value-box mismatch';
+                    expBox.className = 'value-box mismatch';
+                    result.className = 'result-badge fail';
+                    result.textContent = 'FAIL';
+                    demoErrors++;
+                }
+
+                document.getElementById('demo-errors').textContent = `error_count = ${demoErrors}`;
+                i++;
+            }, 800);
+        }
+
+        function demoCorrect() {
+            demoReset();
+            runDemo(false);
+        }
+
+        function demoBuggy() {
+            demoReset();
+            runDemo(true);
+        }
+
+        function demoReset() {
+            demoErrors = 0;
+            document.getElementById('demo-a').textContent = '0';
+            document.getElementById('demo-b').textContent = '0';
+            document.getElementById('demo-y').textContent = '0';
+            document.getElementById('demo-expected').textContent = '0';
+            document.getElementById('demo-y').className = 'value-box';
+            document.getElementById('demo-expected').className = 'value-box';
+            document.getElementById('demo-result').className = 'result-badge pass';
+            document.getElementById('demo-result').textContent = 'PASS';
+            document.getElementById('demo-errors').textContent = 'error_count = 0';
+        }
+
+        // Initialize
+        updateProgress();
+        updateNavButtons();
+    </script>
+</body>
+</html>
