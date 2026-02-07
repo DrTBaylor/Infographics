@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontier AI Chat Features — 2026 Landscape</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Status colors — default palette */
+            --s-full:           #34d399;
+            --s-full-light:     #6ee7b7;
+            --s-full-bg:        rgba(52, 211, 153, 0.25);
+            --s-full-border:    rgba(52, 211, 153, 0.6);
+            --s-full-bg-tip:    rgba(52, 211, 153, 0.1);
+            --s-full-border-tip:rgba(52, 211, 153, 0.25);
+
+            --s-partial:           #fbbf24;
+            --s-partial-light:     #fbbf24;
+            --s-partial-bg:        rgba(251, 191, 36, 0.18);
+            --s-partial-border:    rgba(251, 191, 36, 0.5);
+            --s-partial-bg-tip:    rgba(251, 191, 36, 0.08);
+            --s-partial-border-tip:rgba(251, 191, 36, 0.2);
+
+            --s-none:           #f87171;
+            --s-none-light:     #f87171;
+            --s-none-bg:        rgba(239, 68, 68, 0.12);
+            --s-none-border:    rgba(239, 68, 68, 0.35);
+            --s-none-bg-tip:    rgba(239, 68, 68, 0.06);
+            --s-none-border-tip:rgba(239, 68, 68, 0.15);
+        }
+
+        /* Accessible palette — blue / orange / gray */
+        /* Distinguishable across deuteranopia, protanopia, and tritanopia */
+        .accessible-mode {
+            --s-full:           #60a5fa;
+            --s-full-light:     #93c5fd;
+            --s-full-bg:        rgba(96, 165, 250, 0.25);
+            --s-full-border:    rgba(96, 165, 250, 0.6);
+            --s-full-bg-tip:    rgba(96, 165, 250, 0.1);
+            --s-full-border-tip:rgba(96, 165, 250, 0.25);
+
+            --s-partial:           #fb923c;
+            --s-partial-light:     #fdba74;
+            --s-partial-bg:        rgba(251, 146, 60, 0.22);
+            --s-partial-border:    rgba(251, 146, 60, 0.55);
+            --s-partial-bg-tip:    rgba(251, 146, 60, 0.1);
+            --s-partial-border-tip:rgba(251, 146, 60, 0.2);
+
+            --s-none:           #6b7280;
+            --s-none-light:     #9ca3af;
+            --s-none-bg:        rgba(107, 114, 128, 0.18);
+            --s-none-border:    rgba(107, 114, 128, 0.4);
+            --s-none-bg-tip:    rgba(107, 114, 128, 0.08);
+            --s-none-border-tip:rgba(107, 114, 128, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0e1a;
+        }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'DM Sans', sans-serif;
+            color: #c8d0e0;
+            background: linear-gradient(160deg, #0c1024 0%, #111832 40%, #0d1228 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 36px 18px;
+        }
+
+        /* ============ HEADER ============ */
+        .header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+        .header-left {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #f0f4ff;
+            letter-spacing: -0.5px;
+        }
+        .title-accent {
+            background: linear-gradient(135deg, #6ee7b7, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            color: #6ee7b7;
+            background: rgba(110, 231, 183, 0.1);
+            border: 1px solid rgba(110, 231, 183, 0.25);
+            border-radius: 6px;
+            padding: 3px 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #64748b;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+        .legend-dot.s-full { background: var(--s-full); }
+        .legend-dot.s-partial { background: var(--s-partial); }
+        .legend-dot.s-none { background: var(--s-none); }
+
+        .legend-divider {
+            width: 1px;
+            height: 18px;
+            background: #334155;
+        }
+
+        .legend-tier-demo {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 6px;
+            padding: 3px 8px;
+        }
+        .legend-tier-demo .tier-pip {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7px;
+            font-weight: 700;
+            color: rgba(0,0,0,0.6);
+        }
+        .legend-tier-label {
+            font-size: 10px;
+            color: #64748b;
+        }
+        .legend-explain {
+            font-size: 10px;
+            font-style: italic;
+            color: #475569;
+        }
+
+        /* ============ MATRIX GRID ============ */
+        .matrix {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 208px repeat(7, 1fr);
+            grid-template-rows: 50px repeat(13, 1fr);
+            gap: 2px;
+            min-height: 0;
+        }
+
+        /* Platform header cells */
+        .platform-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            border-radius: 8px 8px 0 0;
+            padding: 4px 4px;
+            position: relative;
+        }
+        .platform-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            border-radius: 1px;
+        }
+        .platform-name {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .platform-maker {
+            font-size: 10px;
+            font-weight: 400;
+            opacity: 0.6;
+        }
+
+        .p-chatgpt { background: rgba(16, 163, 127, 0.08); }
+        .p-chatgpt .platform-name { color: #10a37f; }
+        .p-chatgpt::after { background: #10a37f; }
+        .p-claude { background: rgba(217, 119, 6, 0.08); }
+        .p-claude .platform-name { color: #d97706; }
+        .p-claude::after { background: #d97706; }
+        .p-gemini { background: rgba(66, 133, 244, 0.08); }
+        .p-gemini .platform-name { color: #4285f4; }
+        .p-gemini::after { background: #4285f4; }
+        .p-grok { background: rgba(148, 163, 184, 0.08); }
+        .p-grok .platform-name { color: #94a3b8; }
+        .p-grok::after { background: #94a3b8; }
+        .p-copilot { background: rgba(0, 120, 212, 0.08); }
+        .p-copilot .platform-name { color: #38bdf8; }
+        .p-copilot::after { background: #38bdf8; }
+        .p-deepseek { background: rgba(99, 102, 241, 0.08); }
+        .p-deepseek .platform-name { color: #818cf8; }
+        .p-deepseek::after { background: #818cf8; }
+        .p-perplexity { background: rgba(45, 212, 191, 0.08); }
+        .p-perplexity .platform-name { color: #2dd4bf; }
+        .p-perplexity::after { background: #2dd4bf; }
+
+        .corner {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            padding: 6px 12px;
+            font-size: 10px;
+            color: #475569;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Category label cells */
+        .cat-label {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 3px 10px;
+            border-radius: 6px 0 0 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .cat-label:hover { background: rgba(255,255,255,0.04); }
+        .cat-label:hover .cat-text { color: #fff; }
+        .cat-label:hover .cat-hint { opacity: 1; }
+        .cat-icon {
+            font-size: 15px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .cat-text-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+        }
+        .cat-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e2e8f0;
+            line-height: 1.2;
+            transition: color 0.15s;
+        }
+        .cat-hint {
+            font-size: 9px;
+            color: #4b6085;
+            opacity: 0;
+            transition: opacity 0.15s;
+            letter-spacing: 0.2px;
+        }
+
+        /* Feature cells */
+        .cell {
+            background: rgba(255,255,255,0.015);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 5px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            gap: 2px;
+        }
+        .cell:hover {
+            background: rgba(255,255,255,0.07);
+            transform: scale(1.04);
+            z-index: 10;
+            box-shadow: 0 0 12px rgba(0,0,0,0.3);
+        }
+
+        /* Dual tier indicator */
+        .tier-row {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+        .tier-pip {
+            width: 18px;
+            height: 16px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7.5px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            transition: all 0.15s;
+        }
+        .tier-pip.s-full {
+            background: var(--s-full-bg);
+            border: 1.5px solid var(--s-full-border);
+            color: var(--s-full-light);
+        }
+        .tier-pip.s-partial {
+            background: var(--s-partial-bg);
+            border: 1.5px solid var(--s-partial-border);
+            color: var(--s-partial-light);
+        }
+        .tier-pip.s-none {
+            background: var(--s-none-bg);
+            border: 1.5px solid var(--s-none-border);
+            color: var(--s-none-light);
+        }
+
+        .cell-label {
+            font-size: 9.5px;
+            font-weight: 500;
+            color: #8892a8;
+            text-align: center;
+            line-height: 1.15;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .cell.all-none .cell-label { color: #3e4557; }
+
+        /* Tooltip */
+        .tooltip {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            background: #1a2236;
+            border: 1px solid #2d3a52;
+            border-radius: 10px;
+            padding: 14px 18px;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        .tooltip.visible { display: block; }
+        .tooltip-platform {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
+        }
+        .tooltip-category {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f0f4ff;
+            margin-bottom: 10px;
+        }
+
+        /* Category feature tooltip */
+        .tooltip-cat-icon {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+        .tooltip-cat-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f0f4ff;
+            margin-bottom: 10px;
+        }
+        .tooltip-cat-body {
+            font-size: 12.5px;
+            color: #a0aec0;
+            line-height: 1.6;
+        }
+        .tooltip-cat-body strong {
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+        .tooltip-cat-examples {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .tooltip-cat-examples-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--s-full-light);
+            margin-bottom: 6px;
+        }
+        .tooltip-cat-example-item {
+            font-size: 11.5px;
+            color: #8892a8;
+            line-height: 1.5;
+            padding-left: 10px;
+            border-left: 2px solid var(--s-full-bg);
+            margin-bottom: 5px;
+        }
+        .tooltip-tiers {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .tooltip-tier-box {
+            flex: 1;
+            border-radius: 8px;
+            padding: 8px 10px;
+            text-align: center;
+        }
+        .tooltip-tier-box.s-full {
+            background: var(--s-full-bg-tip);
+            border: 1px solid var(--s-full-border-tip);
+        }
+        .tooltip-tier-box.s-partial {
+            background: var(--s-partial-bg-tip);
+            border: 1px solid var(--s-partial-border-tip);
+        }
+        .tooltip-tier-box.s-none {
+            background: var(--s-none-bg-tip);
+            border: 1px solid var(--s-none-border-tip);
+        }
+        .tooltip-tier-heading {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 3px;
+        }
+        .tooltip-tier-heading.free { color: #94a3b8; }
+        .tooltip-tier-heading.paid { color: #c084fc; }
+        .tooltip-tier-status {
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .tooltip-tier-status.s-full { color: var(--s-full); }
+        .tooltip-tier-status.s-partial { color: var(--s-partial); }
+        .tooltip-tier-status.s-none { color: var(--s-none); }
+
+        .tooltip-body {
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* Accessibility toggle */
+        .a11y-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #64748b;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .a11y-toggle:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.2);
+            color: #94a3b8;
+        }
+        .a11y-toggle.active {
+            background: rgba(96, 165, 250, 0.12);
+            border-color: rgba(96, 165, 250, 0.35);
+            color: #93c5fd;
+        }
+        .a11y-toggle-icon {
+            font-size: 14px;
+        }
+        .a11y-toggle-label {
+            line-height: 1;
+        }
+
+        /* Footer */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+        .footer-note {
+            font-size: 10px;
+            color: #475569;
+        }
+        .footer-date {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+
+            <div class="header">
+                <div class="header-left">
+                    <div class="title">Frontier AI Chat <span class="title-accent">Features</span></div>
+                    <div class="badge">AS OF FEB 7, 2026</div>
+                </div>
+                <div class="legend">
+                    <div class="legend-row">
+                        <div class="legend-item"><div class="legend-dot s-full"></div> Full</div>
+                        <div class="legend-item"><div class="legend-dot s-partial"></div> Partial</div>
+                        <div class="legend-item"><div class="legend-dot s-none"></div> Unavailable</div>
+                        <div class="legend-divider"></div>
+                        <div class="legend-tier-demo">
+                            <div class="tier-pip s-full" style="width:18px;height:16px;font-size:7.5px;">F</div>
+                            <div class="tier-pip s-partial" style="width:18px;height:16px;font-size:7.5px;">$</div>
+                        </div>
+                        <div class="legend-tier-label">= Free &amp; Paid tiers</div>
+                        <div class="legend-divider"></div>
+                        <div class="legend-explain">Hover cells for details</div>
+                        <div class="legend-divider"></div>
+                        <button class="a11y-toggle" id="a11yToggle" title="Toggle colorblind-friendly palette">
+                            <span class="a11y-toggle-icon">👁</span>
+                            <span class="a11y-toggle-label">Accessible Colors</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="matrix" id="matrix"></div>
+
+            <div class="footer">
+                <div class="footer-note">Consumer-facing chat interfaces. "Paid" = highest consumer tier (Plus/Pro/Premium/Advanced). Capabilities as of early 2026.</div>
+                <div class="footer-date">Updated Feb 2026</div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+    const platforms = [
+        { id: 'chatgpt',   name: 'ChatGPT',    maker: 'OpenAI',    color: '#10a37f' },
+        { id: 'claude',    name: 'Claude',      maker: 'Anthropic', color: '#d97706' },
+        { id: 'gemini',    name: 'Gemini',      maker: 'Google',    color: '#4285f4' },
+        { id: 'grok',      name: 'Grok',        maker: 'xAI',       color: '#94a3b8' },
+        { id: 'copilot',   name: 'Copilot',     maker: 'Microsoft', color: '#38bdf8' },
+        { id: 'deepseek',  name: 'DeepSeek',    maker: 'DeepSeek',  color: '#818cf8' },
+        { id: 'perplexity',name: 'Perplexity',  maker: 'Perplexity',color: '#2dd4bf' },
+    ];
+
+    const categories = [
+        { id: 'reasoning',  icon: '🧠', name: 'Reasoning / Thinking Modes',
+          desc: 'The ability for the AI to engage in <strong>deliberate, multi-step reasoning</strong> before responding — often called "chain-of-thought" or "thinking" mode. Instead of producing an immediate answer, the model pauses to work through the problem step by step, sometimes showing its reasoning process to the user.',
+          examples: ['Solving complex math or logic puzzles', 'Weighing pros and cons for a decision', 'Debugging code by reasoning through execution flow'] },
+
+        { id: 'research',   icon: '🔬', name: 'Deep Research',
+          desc: 'An <strong>autonomous research agent</strong> that goes far beyond a single web search. The AI plans a multi-step investigation, executes dozens of searches, reads and synthesizes sources, and produces a comprehensive cited report — often taking minutes rather than seconds.',
+          examples: ['Competitive analysis across an industry', 'Literature review on a scientific topic', 'Investigating a complex policy question with multiple perspectives'] },
+
+        { id: 'search',     icon: '🌐', name: 'Web Search & Real-Time Data',
+          desc: 'The ability to <strong>search the live internet</strong> during a conversation to find current information. The AI queries search engines, reads results, and weaves findings into its response with citations — keeping answers up to date beyond training data.',
+          examples: ['Current stock prices or weather', 'Today\'s news headlines', 'Finding the latest version of a software library'] },
+
+        { id: 'memory',     icon: '💾', name: 'Memory & Personalization',
+          desc: '<strong>Persistent knowledge about the user</strong> that carries across separate conversations. The AI remembers preferences, past projects, personal details, and prior discussions — building a richer, more personalized experience over time without the user repeating themselves.',
+          examples: ['Remembering your coding language preferences', 'Recalling a project discussed weeks ago', 'Adapting tone based on learned communication style'] },
+
+        { id: 'voice',      icon: '🎙️', name: 'Voice & Multimodal Input',
+          desc: '<strong>Speaking to the AI and having it speak back</strong> in real-time, plus the ability to share images or camera feeds as input. Ranges from basic voice dictation to full conversational voice modes with emotional expression and vision understanding.',
+          examples: ['Having a verbal brainstorm conversation', 'Pointing your camera at a bug and asking what species it is', 'Dictating notes while driving'] },
+
+        { id: 'imagevideo', icon: '🎨', name: 'Image & Video Generation',
+          desc: 'The AI can <strong>create, edit, and transform images and video</strong> from text descriptions. This includes generating illustrations, editing photos, creating marketing assets, and producing short video clips — all from natural language prompts.',
+          examples: ['Generating a product mockup from a description', 'Editing a photo to change the background', 'Creating a short animated video clip'] },
+
+        { id: 'canvas',     icon: '✏️', name: 'Canvas / Collaborative Editing',
+          desc: 'An <strong>interactive side-by-side editor</strong> where the AI and user collaborate on documents and code in real time. The user can highlight specific sections for targeted rewrites, adjust tone or reading level, track version history with diffs, and iterate with inline suggestions — more like a shared workspace than a chat window.',
+          examples: ['Highlighting a paragraph and asking the AI to simplify it', 'Using version history to compare and roll back edits', 'Adjusting an entire document to an 8th-grade reading level with one click'] },
+
+        { id: 'codeexec',  icon: '⚡', name: 'Code Execution / Sandbox',
+          desc: 'A <strong>sandboxed environment where the AI can write and actually run code</strong> — executing Python scripts, performing data analysis, generating charts, rendering web pages, and producing downloadable output files. The code runs server-side in a secure container, not on the user\'s machine.',
+          examples: ['Running data analysis on an uploaded CSV and producing charts', 'Executing a Python script to process and transform data', 'Rendering a live interactive React component or HTML page'] },
+
+        { id: 'agents',     icon: '🤖', name: 'Agents & Task Automation',
+          desc: '<strong>Autonomous AI agents</strong> that can take multi-step actions in the real world — browsing websites, clicking buttons, running terminal commands, managing files, and interacting with third-party services on the user\'s behalf.',
+          examples: ['Booking a restaurant reservation', 'Autonomously fixing a GitHub issue', 'Filling out forms and navigating websites to complete a purchase'] },
+
+        { id: 'custom',     icon: '🧩', name: 'Custom Assistants / Personas',
+          desc: 'The ability to <strong>create specialized AI personas</strong> with custom instructions, knowledge bases, and behavior — essentially building a purpose-built assistant for a specific domain, workflow, or personality.',
+          examples: ['A legal contract reviewer with firm-specific guidelines', 'A language tutor that only speaks in the target language', 'A 3D animated companion character with a unique personality'] },
+
+        { id: 'browser',    icon: '🖥️', name: 'Dedicated Browser',
+          desc: 'A <strong>standalone web browser application</strong> built by the AI platform with AI deeply integrated into the browsing experience — not just a chatbot sidebar, but a fundamentally AI-native way to navigate and interact with the web.',
+          examples: ['ChatGPT\'s Atlas browser for macOS', 'Perplexity\'s Comet browser (free, cross-platform)', 'AI-assisted search, summarization, and interaction while browsing'] },
+
+        { id: 'files',      icon: '📄', name: 'File Creation & Export',
+          desc: 'The ability to <strong>generate downloadable files</strong> in professional formats — Word documents, spreadsheets, presentations, PDFs, code files, and more. Goes beyond showing text in chat to producing real, formatted files the user can save and share.',
+          examples: ['Creating a formatted Word report from research', 'Generating an Excel spreadsheet with charts', 'Building a PowerPoint deck from a prompt'] },
+
+        { id: 'filesystem', icon: '📁', name: 'Local Filesystem Access',
+          desc: 'The ability to <strong>interact directly with files and folders on the user\'s local computer</strong> or connected cloud storage — reading, writing, organizing, and executing programs on the actual filesystem rather than just in a sandboxed environment.',
+          examples: ['Claude Code running terminal commands on your machine', 'Copilot accessing local files through Windows integration', 'MCP connectors bridging AI to local development tools'] },
+
+    ];
+
+    // f = free tier status, p = paid tier status, l = label, d = description
+    const data = {
+        // REASONING
+        'reasoning-chatgpt':    { f:'partial', p:'full',    l:'Thinking Levels',      d:'Free: limited thinking access. Plus/Pro: GPT-5.2 Thinking with adjustable effort, Instant/Thinking/Pro modes.' },
+        'reasoning-claude':     { f:'partial', p:'full',    l:'Extended Thinking',    d:'Free: basic Extended Thinking. Pro: full budget control, visible thinking traces, longer reasoning chains.' },
+        'reasoning-gemini':     { f:'partial', p:'full',    l:'Deep Think',           d:'Free: basic Gemini reasoning. Advanced/Ultra: Gemini 3 Thinking Pro, Deep Think for complex problems.' },
+        'reasoning-grok':       { f:'partial', p:'full',    l:'Expert Mode',          d:'Free: standard Grok reasoning. Premium+: Expert Mode with full chain-of-thought.' },
+        'reasoning-copilot':    { f:'partial', p:'full',    l:'Think Deeper',         d:'Free: basic responses. Pro: Think Deeper, Quick Response, and Auto modes.' },
+        'reasoning-deepseek':   { f:'full',    p:'full',    l:'Deep Think (R1)',       d:'Free for all users. R1 reasoning model with visible chain-of-thought. Hybrid thinking modes.' },
+        'reasoning-perplexity': { f:'partial', p:'full',    l:'Pro Search',           d:'Free: basic answers (5/day Pro Search). Pro: unlimited Pro Search, R1-1776 reasoning model.' },
+
+        // DEEP RESEARCH
+        'research-chatgpt':    { f:'partial', p:'full',    l:'Deep Research',         d:'Free: limited Deep Research queries. Plus/Pro: full autonomous multi-step research agent.' },
+        'research-claude':     { f:'none',    p:'full',    l:'Deep Research',         d:'Pro only. Extended thinking + web search producing structured cited reports.' },
+        'research-gemini':     { f:'none',    p:'full',    l:'Deep Research',         d:'Advanced/Ultra only. Multi-step research with visual outputs, export to Google Docs.' },
+        'research-grok':       { f:'none',    p:'full',    l:'DeeperSearch',          d:'Premium+ only. Multi-step research with real-time X and web data.' },
+        'research-copilot':    { f:'none',    p:'full',    l:'Deep Research',         d:'Pro/M365 only. Bing-grounded multi-step investigation.' },
+        'research-deepseek':   { f:'partial', p:'partial', l:'Search Agent',          d:'V3.1+ search agent available to all users. Less autonomous than competitors.' },
+        'research-perplexity': { f:'partial', p:'full',    l:'Deep Research',         d:'Free: limited depth. Pro: full Deep Research with extensive source synthesis.' },
+
+        // WEB SEARCH
+        'search-chatgpt':    { f:'full',    p:'full',    l:'Advanced Search',       d:'Available on all tiers. Built-in web search with citations.' },
+        'search-claude':     { f:'partial', p:'full',    l:'Web Search',            d:'Free: limited web searches. Pro: full web search with inline citations.' },
+        'search-gemini':     { f:'full',    p:'full',    l:'Google Search',         d:'All tiers. Native Google Search integration. AI Mode for search-first experience.' },
+        'search-grok':       { f:'full',    p:'full',    l:'X + Web Search',        d:'All tiers. Real-time X/Twitter data + web search. Unique live event coverage.' },
+        'search-copilot':    { f:'full',    p:'full',    l:'Bing-Grounded',         d:'All tiers. All responses grounded in Bing search.' },
+        'search-deepseek':   { f:'full',    p:'full',    l:'Search Agent',          d:'All tiers. V3.1+ search tool with web retrieval.' },
+        'search-perplexity': { f:'full',    p:'full',    l:'Core Product',          d:'All tiers. Every query is web-grounded with citations. Search is the foundation.' },
+
+        // MEMORY
+        'memory-chatgpt':    { f:'partial', p:'full',    l:'Memory + History',      d:'Free: basic memory. Plus/Pro: full memory, chat history search, reference past conversations.' },
+        'memory-claude':     { f:'none',    p:'full',    l:'Memory + Chat Search',  d:'Pro only. Cross-conversation memory, past chat search and retrieval.' },
+        'memory-gemini':     { f:'partial', p:'partial', l:'Saved Info',            d:'Free: basic saved preferences. Advanced: improved context, but less robust than competitors.' },
+        'memory-grok':       { f:'partial', p:'partial', l:'Context Retention',     d:'Basic context within sessions on all tiers. Persistent memory limited.' },
+        'memory-copilot':    { f:'none',    p:'full',    l:'Work IQ / Memory',      d:'M365/Enterprise only. Work IQ learns preferences and work patterns.' },
+        'memory-deepseek':   { f:'none',    p:'none',    l:'—',                     d:'No persistent memory on any tier.' },
+        'memory-perplexity': { f:'partial', p:'partial', l:'Spaces',                d:'All tiers (limited free). Spaces for organizing research threads, not true memory.' },
+
+        // VOICE
+        'voice-chatgpt':    { f:'partial', p:'full',    l:'Advanced Voice',        d:'Free: basic voice. Plus/Pro: Advanced Voice Mode — real-time conversation, emotions, accents.' },
+        'voice-claude':     { f:'partial', p:'partial', l:'Voice Input',           d:'Voice dictation input on mobile. No real-time voice conversation mode yet.' },
+        'voice-gemini':     { f:'partial', p:'full',    l:'Gemini Live',           d:'Free: limited Gemini Live. Advanced/Ultra: full voice + camera on mobile.' },
+        'voice-grok':       { f:'none',    p:'full',    l:'Grok Voice + Vision',   d:'Premium+ only. Voice mode plus vision input for multimodal conversations.' },
+        'voice-copilot':    { f:'partial', p:'full',    l:'Copilot Voice',         d:'Free: basic voice. Pro: full voice interaction across desktop and mobile.' },
+        'voice-deepseek':   { f:'none',    p:'none',    l:'—',                     d:'No voice mode on any tier. Text-only interface.' },
+        'voice-perplexity': { f:'partial', p:'partial', l:'Voice Queries',         d:'All tiers. Voice input for search queries, not a full conversational voice mode.' },
+
+        // IMAGE/VIDEO
+        'imagevideo-chatgpt':    { f:'partial', p:'full',    l:'GPT-4o + Sora',     d:'Free: limited image gen. Plus/Pro: full GPT-4o image gen/edit + Sora video generation.' },
+        'imagevideo-claude':     { f:'none',    p:'none',    l:'—',                  d:'No image or video generation on any tier.' },
+        'imagevideo-gemini':     { f:'partial', p:'full',    l:'Imagen + Veo 3',     d:'Free: basic image gen. Advanced/Ultra: full Imagen + Veo 2/3 video + Flow filmmaking.' },
+        'imagevideo-grok':       { f:'partial', p:'full',    l:'Aurora + Imagine',   d:'Free: limited Aurora. Premium+: full Aurora (few restrictions) + Grok Imagine video.' },
+        'imagevideo-copilot':    { f:'partial', p:'partial', l:'Designer',           d:'Free: limited Designer. Pro: more credits. No video generation on any tier.' },
+        'imagevideo-deepseek':   { f:'none',    p:'none',    l:'—',                  d:'No image or video generation on any tier.' },
+        'imagevideo-perplexity': { f:'none',    p:'partial', l:'Partner Models',     d:'Pro only. Image generation via partner models. Limited capability.' },
+
+        // CANVAS / COLLABORATIVE EDITING
+        'canvas-chatgpt':    { f:'partial', p:'full',    l:'Canvas',               d:'Free: limited Canvas access. Plus/Pro: full Canvas — highlight-to-edit, reading level control, inline suggestions, version history with diffs, show-changes mode.' },
+        'canvas-claude':     { f:'partial', p:'full',    l:'Artifacts',            d:'Free: basic Artifacts (Markdown, HTML, React, SVG, Mermaid rendered inline). Pro: full interactive editing, live preview, iterative refinement.' },
+        'canvas-gemini':     { f:'partial', p:'full',    l:'Canvas',               d:'Free: basic Canvas. Advanced: full collaborative editing, insert directly into Google Docs/Sheets/Slides.' },
+        'canvas-grok':       { f:'none',    p:'none',    l:'—',                    d:'No canvas or collaborative editing surface on any tier.' },
+        'canvas-copilot':    { f:'partial', p:'full',    l:'Pages + Office',       d:'Free: basic Copilot Pages. Pro/M365: full editing inside Word, Excel, PowerPoint with Copilot sidebar.' },
+        'canvas-deepseek':   { f:'none',    p:'none',    l:'—',                    d:'No collaborative editing surface on any tier. Text chat only.' },
+        'canvas-perplexity': { f:'none',    p:'none',    l:'—',                    d:'No canvas or document editing. Answer-focused interface only.' },
+
+        // CODE EXECUTION / SANDBOX
+        'codeexec-chatgpt':    { f:'partial', p:'full',    l:'Code Interpreter',   d:'Free: limited access. Plus/Pro: full Code Interpreter — Python sandbox, file I/O, chart generation, React/HTML preview.' },
+        'codeexec-claude':     { f:'partial', p:'full',    l:'Code Execution',     d:'Free: limited runs. Pro: full sandboxed code execution, generates files (DOCX, XLSX, etc.), renders web pages.' },
+        'codeexec-gemini':     { f:'partial', p:'full',    l:'Code Execution',     d:'Free: basic execution. Advanced: full sandbox, export to Google Colab and Replit for continued work.' },
+        'codeexec-grok':       { f:'none',    p:'partial', l:'Code Execution',     d:'Premium+ only. Sandboxed code execution. More limited than competitors.' },
+        'codeexec-copilot':    { f:'none',    p:'partial', l:'Limited',            d:'Pro/M365: some code execution capability. Less robust sandbox than ChatGPT or Claude.' },
+        'codeexec-deepseek':   { f:'partial', p:'partial', l:'Code Output',        d:'All tiers. Generates code in-chat but no sandbox execution in consumer interface.' },
+        'codeexec-perplexity': { f:'none',    p:'none',    l:'—',                  d:'No code execution on any tier. Answer-focused only.' },
+
+        // AGENTS
+        'agents-chatgpt':    { f:'none',    p:'full',    l:'Agent Mode + Codex',  d:'Plus/Pro only. Agent Mode (browse, code, create files). Codex for async coding. Apps SDK.' },
+        'agents-claude':     { f:'none',    p:'full',    l:'Code + MCP + CU',     d:'Pro only. Claude Code (terminal agent). Computer Use (desktop). MCP Connectors.' },
+        'agents-gemini':     { f:'none',    p:'full',    l:'Jules + Agents',      d:'Paid only. Jules coding agent. Workspace agents for Docs/Sheets/Slides.' },
+        'agents-grok':       { f:'none',    p:'partial', l:'API Agent Tools',     d:'Agent tools via API only. Consumer chat has limited agentic capabilities.' },
+        'agents-copilot':    { f:'none',    p:'full',    l:'Actions + Studio',    d:'Pro/M365 only. Actions (Expedia, OpenTable). Copilot Studio agent builder.' },
+        'agents-deepseek':   { f:'partial', p:'partial', l:'Tool-Use Thinking',   d:'V3.2 thinking-in-tool-use. Available to all but limited scope.' },
+        'agents-perplexity': { f:'partial', p:'partial', l:'Comet Assistant',     d:'Comet browser (free) has AI assistant for web tasks. Not a full autonomous agent.' },
+
+        // CUSTOM ASSISTANTS
+        'custom-chatgpt':    { f:'partial', p:'full',    l:'Custom GPTs',         d:'Free: use GPTs. Plus/Pro: create and publish Custom GPTs with tools and knowledge.' },
+        'custom-claude':     { f:'none',    p:'partial', l:'Projects',            d:'Pro only. Projects with custom instructions and knowledge. No public marketplace.' },
+        'custom-gemini':     { f:'none',    p:'full',    l:'Gems',                d:'Advanced/Ultra only. Gems: custom expert personas, configurable and shareable.' },
+        'custom-grok':       { f:'partial', p:'full',    l:'Personas + Companions', d:'Free: basic personas. Premium+: full Companions (3D animated characters).' },
+        'custom-copilot':    { f:'none',    p:'full',    l:'Agent Builder',        d:'Enterprise/M365 only. Custom Copilots via Copilot Studio.' },
+        'custom-deepseek':   { f:'none',    p:'none',    l:'—',                   d:'No custom assistant or persona creation on any tier.' },
+        'custom-perplexity': { f:'partial', p:'partial', l:'Spaces',              d:'All tiers (limited free). Organized research collections, not full custom personas.' },
+
+        // BROWSER
+        'browser-chatgpt':    { f:'none',    p:'full',    l:'Atlas',               d:'Plus/Pro. Atlas: dedicated macOS browser (launched Oct 2025). AI-native browsing.' },
+        'browser-claude':     { f:'none',    p:'partial', l:'Chrome Extension',    d:'Pro (beta). Claude in Chrome: AI browsing agent extension.' },
+        'browser-gemini':     { f:'none',    p:'none',    l:'—',                   d:'No dedicated browser. Deep Chrome/Android integration instead.' },
+        'browser-grok':       { f:'none',    p:'none',    l:'—',                   d:'No dedicated browser. Accessed via X/grok.com.' },
+        'browser-copilot':    { f:'partial', p:'partial', l:'Edge Sidebar',        d:'Free with Edge. Copilot sidebar built into Microsoft Edge browser.' },
+        'browser-deepseek':   { f:'none',    p:'none',    l:'—',                   d:'No browser product on any tier.' },
+        'browser-perplexity': { f:'full',    p:'full',    l:'Comet',               d:'Free for all. Comet: cross-platform AI-first browser (launched Oct 2025).' },
+
+        // FILES
+        'files-chatgpt':    { f:'partial', p:'full',    l:'DOCX PDF MD XLSX PPTX', d:'Free: basic Canvas export (PDF, MD). Plus/Pro: full Canvas + GPT-5.2 native XLSX & PPTX creation.' },
+        'files-claude':     { f:'partial', p:'full',    l:'DOCX XLSX PPTX PDF +',  d:'Free: Artifacts (MD, HTML, React, SVG inline). Pro: code exec creates DOCX, XLSX, PPTX, PDF files.' },
+        'files-gemini':     { f:'partial', p:'partial', l:'Google Ecosystem',      d:'Free: export to Docs/Sheets. No direct file downloads—content goes through Google apps.' },
+        'files-grok':       { f:'partial', p:'partial', l:'PDF Only',              d:'Basic PDF generation from prompts. No DOCX/XLSX/PPTX. Images downloadable.' },
+        'files-copilot':    { f:'none',    p:'partial', l:'Via M365 Apps',         d:'M365 only. Creates content inside Word, Excel, PowerPoint. Not standalone downloads from chat.' },
+        'files-deepseek':   { f:'none',    p:'none',    l:'—',                     d:'No file creation or export on any tier.' },
+        'files-perplexity': { f:'none',    p:'none',    l:'—',                     d:'No file creation on any tier. Citation-backed answers only.' },
+
+        // LOCAL FILESYSTEM
+        'filesystem-chatgpt':    { f:'none',    p:'partial', l:'Sandboxed Only',    d:'Plus/Pro: Code Interpreter sandbox. File upload/download but no true local filesystem access.' },
+        'filesystem-claude':     { f:'none',    p:'full',    l:'Code + CU + MCP',   d:'Pro: Claude Code (full terminal/filesystem). Computer Use (desktop control). MCP local connectors.' },
+        'filesystem-gemini':     { f:'none',    p:'partial', l:'Drive + Workspace', d:'Paid: Google Drive file access via Workspace. Jules works in code repos. No direct local access.' },
+        'filesystem-grok':       { f:'none',    p:'none',    l:'—',                  d:'No local filesystem interaction on any tier.' },
+        'filesystem-copilot':    { f:'none',    p:'partial', l:'Windows + M365',    d:'Copilot+ PCs: local context access. M365: OneDrive/local file interaction. Recall feature.' },
+        'filesystem-deepseek':   { f:'none',    p:'none',    l:'—',                  d:'No local filesystem access on any tier.' },
+        'filesystem-perplexity': { f:'none',    p:'none',    l:'—',                  d:'No local filesystem access on any tier.' },
+
+    };
+
+    // ============ BUILD MATRIX ============
+    const matrix = document.getElementById('matrix');
+    let html = '<div class="corner">Platform →</div>';
+
+    platforms.forEach(p => {
+        html += `<div class="platform-header p-${p.id}">
+            <div class="platform-name">${p.name}</div>
+            <div class="platform-maker">${p.maker}</div>
+        </div>`;
+    });
+
+    categories.forEach((cat, ri) => {
+        const bg = ri % 2 === 0 ? 'rgba(255,255,255,0.012)' : 'transparent';
+        html += `<div class="cat-label" style="background:${bg}" data-catid="${cat.id}">
+            <span class="cat-icon">${cat.icon}</span>
+            <span class="cat-text-wrap">
+                <span class="cat-text">${cat.name}</span>
+                <span class="cat-hint">ⓘ hover for details</span>
+            </span>
+        </div>`;
+
+        platforms.forEach(p => {
+            const key = `${cat.id}-${p.id}`;
+            const d = data[key] || { f:'none', p:'none', l:'—', d:'' };
+            const allNone = d.f === 'none' && d.p === 'none';
+            html += `<div class="cell ${allNone ? 'all-none' : ''}"
+                 data-pname="${p.name}" data-cname="${cat.name}"
+                 data-free="${d.f}" data-paid="${d.p}"
+                 data-detail="${d.d}" data-pcolor="${p.color}"
+                 style="background:${ri % 2 === 0 ? 'rgba(255,255,255,0.018)' : 'rgba(255,255,255,0.006)'}">
+                <div class="tier-row">
+                    <div class="tier-pip s-${d.f}">F</div>
+                    <div class="tier-pip s-${d.p}">$</div>
+                </div>
+                <div class="cell-label">${d.l}</div>
+            </div>`;
+        });
+    });
+
+    matrix.innerHTML = html;
+
+    // ============ CELL TOOLTIP ============
+    const tooltip = document.getElementById('tooltip');
+    const sLabel = { full: 'Full Support', partial: 'Partial / Limited', none: 'Not Available' };
+
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.addEventListener('mouseenter', e => {
+            const fs = cell.dataset.free;
+            const ps = cell.dataset.paid;
+            const pc = cell.dataset.pcolor;
+
+            tooltip.innerHTML = `
+                <div class="tooltip-platform" style="color:${pc}">${cell.dataset.pname}</div>
+                <div class="tooltip-category">${cell.dataset.cname}</div>
+                <div class="tooltip-tiers">
+                    <div class="tooltip-tier-box s-${fs}">
+                        <div class="tooltip-tier-heading free">Free Tier</div>
+                        <div class="tooltip-tier-status s-${fs}">${sLabel[fs]}</div>
+                    </div>
+                    <div class="tooltip-tier-box s-${ps}">
+                        <div class="tooltip-tier-heading paid">Paid Tier</div>
+                        <div class="tooltip-tier-status s-${ps}">${sLabel[ps]}</div>
+                    </div>
+                </div>
+                <div class="tooltip-body">${cell.dataset.detail}</div>
+            `;
+            tooltip.classList.add('visible');
+
+            const r = cell.getBoundingClientRect();
+            const tt = tooltip.getBoundingClientRect();
+            let left = r.left + r.width / 2 - tt.width / 2;
+            let top = r.top - tt.height - 8;
+            if (top < 4) top = r.bottom + 8;
+            if (left < 4) left = 4;
+            if (left + tt.width > window.innerWidth - 4) left = window.innerWidth - tt.width - 4;
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        });
+        cell.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+    });
+
+    // ============ CATEGORY LABEL TOOLTIP ============
+    const catMap = {};
+    categories.forEach(c => catMap[c.id] = c);
+
+    document.querySelectorAll('.cat-label[data-catid]').forEach(label => {
+        label.addEventListener('mouseenter', e => {
+            const cat = catMap[label.dataset.catid];
+            if (!cat) return;
+
+            let exHtml = '';
+            if (cat.examples && cat.examples.length) {
+                exHtml = `<div class="tooltip-cat-examples">
+                    <div class="tooltip-cat-examples-title">Example Use Cases</div>
+                    ${cat.examples.map(ex => `<div class="tooltip-cat-example-item">${ex}</div>`).join('')}
+                </div>`;
+            }
+
+            tooltip.innerHTML = `
+                <div class="tooltip-cat-icon">${cat.icon}</div>
+                <div class="tooltip-cat-name">${cat.name}</div>
+                <div class="tooltip-cat-body">${cat.desc}</div>
+                ${exHtml}
+            `;
+            tooltip.classList.add('visible');
+
+            const r = label.getBoundingClientRect();
+            const tt = tooltip.getBoundingClientRect();
+            let left = r.right + 10;
+            let top = r.top + r.height / 2 - tt.height / 2;
+            if (left + tt.width > window.innerWidth - 8) left = r.left - tt.width - 10;
+            if (top < 4) top = 4;
+            if (top + tt.height > window.innerHeight - 4) top = window.innerHeight - tt.height - 4;
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        });
+        label.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+    });
+
+    // ============ ACCESSIBILITY TOGGLE ============
+    const a11yBtn = document.getElementById('a11yToggle');
+    a11yBtn.addEventListener('click', () => {
+        document.documentElement.classList.toggle('accessible-mode');
+        a11yBtn.classList.toggle('active');
+        const isOn = a11yBtn.classList.contains('active');
+        a11yBtn.querySelector('.a11y-toggle-label').textContent = isOn ? 'Default Colors' : 'Accessible Colors';
+    });
+
+    // ============ RESPONSIVE SCALING ============
+    const DW = 1920, DH = 1080;
+    function autoResize() {
+        const c = document.getElementById('viewportContainer');
+        const s = document.getElementById('designSurface');
+        const vw = window.innerWidth, vh = window.innerHeight;
+        let cw, ch;
+        if (vw / vh > 16 / 9) { ch = vh; cw = ch * (16 / 9); }
+        else { cw = vw; ch = cw * (9 / 16); }
+        c.style.width = cw + 'px';
+        c.style.height = ch + 'px';
+        s.style.transform = `scale(${cw / DW})`;
+    }
+    autoResize();
+    let rt;
+    window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(autoResize, 50); });
+    window.addEventListener('orientationchange', () => setTimeout(autoResize, 100));
+    </script>
+</body>
+</html>

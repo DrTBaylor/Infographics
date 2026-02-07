@@ -13,6 +13,7 @@ This is not meant as a public repo just yet.  Many of the graphics are undevelop
 - [AI Use Case Primitives](ai-use-case-primitives_1.html)
 - [Context Engineering Kitchen](context-engineering-kitchen.html)
 - [Context Lifecycle Infographic](context-lifecycle.html)
+- [Frontier AI Chat Features (2026)](frontier-ai-chat-features-2026.html)
 - [LLM Landscape](llm-landscape.html)
 - [Modes of Processing Infographic](modes-of-processing-infographic.html) (Fail)
 - [Prompting Strategies Infographic](prompting-strategies-infographic.html) (Fail)
