@@ -23,6 +23,7 @@ This is not meant as a public repo just yet.  Many of the graphics are undevelop
 - [Address Lines Calculator](address-lines-calculator.html)
 - [Address Lines Figure](address-lines-figure.html)
 - [Car Engine Start Interlock](car-start-interlock.html)
+- [CMOS Logic Gates](cmos_gates.html)
 - [D Latch NAND](d_latch_nand.html)
 - [De Morgan's Laws](demorgans.html)
 - [Digital Advantages (Shannon's Revolution)](digital-advantages-infographic.html)
