@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Understanding RAG — How AI Gets the Right Information</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #1a1a2e; font-family: 'DM Sans', sans-serif; }
+
+  .viewport-container {
+    width: 100%; max-width: 100vw; aspect-ratio: 16 / 9;
+    max-height: 100vh; position: relative; overflow: hidden;
+    margin: auto; top: 50%; transform: translateY(-50%);
+  }
+  .design-surface {
+    width: 1920px; height: 1080px; position: absolute;
+    top: 0; left: 0; transform-origin: top left;
+    background: #faf8f4;
+    overflow: hidden;
+  }
+
+  /* ===== SLIDE SYSTEM ===== */
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s ease;
+    padding: 60px 80px;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  /* ===== NAVIGATION ===== */
+  .nav-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 70px; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 80px;
+    background: rgba(26, 26, 46, 0.06);
+    z-index: 100;
+  }
+  .nav-btn {
+    font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 600;
+    border: none; border-radius: 40px; padding: 12px 32px;
+    cursor: pointer; transition: all 0.25s ease;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-btn.prev { background: transparent; color: #555; }
+  .nav-btn.prev:hover { background: rgba(0,0,0,0.06); }
+  .nav-btn.next { background: #e07a5f; color: #fff; }
+  .nav-btn.next:hover { background: #c4613f; transform: translateY(-1px); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; transform: none !important; }
+
+  .progress-dots {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ccc; transition: all 0.3s ease;
+  }
+  .dot.active { background: #e07a5f; width: 28px; border-radius: 5px; }
+  .dot.visited { background: #81b29a; }
+
+  /* ===== TYPOGRAPHY ===== */
+  .slide-number {
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 3px; color: #e07a5f; margin-bottom: 12px;
+  }
+  h1 {
+    font-family: 'DM Serif Display', serif; font-size: 52px;
+    color: #1a1a2e; line-height: 1.15; margin-bottom: 16px;
+  }
+  h2 {
+    font-family: 'DM Serif Display', serif; font-size: 38px;
+    color: #1a1a2e; line-height: 1.2; margin-bottom: 12px;
+  }
+  .subtitle {
+    font-size: 22px; color: #666; line-height: 1.5;
+    max-width: 800px; margin-bottom: 30px;
+  }
+
+  /* ===== COLORS ===== */
+  :root {
+    --coral: #e07a5f;
+    --sage: #81b29a;
+    --sand: #f2cc8f;
+    --navy: #1a1a2e;
+    --slate: #3d405b;
+    --cream: #faf8f4;
+    --light-sage: #e8f0ec;
+    --light-coral: #fce8e3;
+    --light-sand: #fdf3e0;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  @keyframes slideRight {
+    from { opacity: 0; transform: translateX(-40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(0.5); }
+    70% { transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes drawLine {
+    from { stroke-dashoffset: 1000; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes flowPulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+  @keyframes typewriter {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  .anim-item { opacity: 0; }
+  .slide.active .anim-item { animation: fadeUp 0.6s ease forwards; }
+  .slide.active .anim-item:nth-child(1) { animation-delay: 0.1s; }
+  .slide.active .anim-item:nth-child(2) { animation-delay: 0.25s; }
+  .slide.active .anim-item:nth-child(3) { animation-delay: 0.4s; }
+  .slide.active .anim-item:nth-child(4) { animation-delay: 0.55s; }
+  .slide.active .anim-item:nth-child(5) { animation-delay: 0.7s; }
+
+  /* ===== SLIDE 1: TITLE ===== */
+  .slide-title {
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; background: linear-gradient(135deg, #1a1a2e 0%, #3d405b 100%);
+    padding: 0;
+  }
+  .slide-title .title-content {
+    max-width: 1200px;
+  }
+  .slide-title h1 {
+    font-size: 72px; color: #fff; margin-bottom: 24px;
+  }
+  .slide-title .subtitle { color: rgba(255,255,255,0.7); margin: 0 auto 40px; font-size: 26px; }
+  .title-decoration {
+    display: flex; gap: 16px; justify-content: center; margin-top: 20px;
+  }
+  .title-decoration span {
+    display: inline-block; padding: 10px 24px; border-radius: 30px;
+    font-size: 16px; font-weight: 600;
+  }
+  .td-1 { background: var(--coral); color: #fff; }
+  .td-2 { background: var(--sage); color: #fff; }
+  .td-3 { background: var(--sand); color: var(--navy); }
+
+  /* ===== SLIDE 2: THE PROBLEM ===== */
+  .context-demo {
+    flex: 1; display: flex; align-items: center; gap: 60px; padding-bottom: 60px;
+  }
+  .context-left { flex: 1; }
+  .doc-stack {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 20px;
+  }
+  .doc-item {
+    background: #fff; border: 2px solid #e0ddd5; border-radius: 12px;
+    padding: 16px 20px; font-size: 16px; color: var(--slate);
+    display: flex; align-items: center; gap: 12px;
+    transition: all 0.4s ease;
+  }
+  .doc-item .doc-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .context-right {
+    width: 500px; flex-shrink: 0;
+  }
+  .context-window-visual {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--slate) 100%);
+    border-radius: 20px; padding: 30px; height: 480px;
+    display: flex; flex-direction: column; position: relative;
+    overflow: hidden;
+  }
+  .cw-header {
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(255,255,255,0.5); margin-bottom: 8px;
+  }
+  .cw-label {
+    font-family: 'DM Serif Display', serif; font-size: 26px;
+    color: #fff; margin-bottom: 20px;
+  }
+  .cw-slots {
+    flex: 1; display: flex; flex-direction: column; gap: 8px;
+  }
+  .cw-slot {
+    flex: 1; border: 2px dashed rgba(255,255,255,0.15);
+    border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; font-size: 14px;
+    color: rgba(255,255,255,0.25); transition: all 0.5s ease;
+  }
+  .cw-slot.filled {
+    border-style: solid; border-color: var(--sage);
+    background: rgba(129, 178, 154, 0.15);
+    color: rgba(255,255,255,0.8); font-size: 14px;
+  }
+  .cw-slot.overflow {
+    border-color: var(--coral); background: rgba(224, 122, 95, 0.15);
+  }
+  .cw-overflow-msg {
+    position: absolute; bottom: 20px; left: 0; right: 0;
+    text-align: center; color: var(--coral); font-weight: 700;
+    font-size: 18px; opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .cw-overflow-msg.show { opacity: 1; }
+
+  /* ===== SLIDE 3: KEYWORD SEARCH FAILS ===== */
+  .search-demo {
+    flex: 1; display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px;
+  }
+  .search-bar {
+    background: #fff; border: 3px solid #e0ddd5; border-radius: 16px;
+    padding: 18px 28px; font-size: 22px; color: var(--navy);
+    display: flex; align-items: center; gap: 16px;
+    max-width: 700px;
+  }
+  .search-bar .search-icon {
+    font-size: 24px; color: #aaa;
+  }
+  .search-bar .query-text { font-weight: 600; }
+  .search-bar .query-text .highlight-word {
+    background: var(--light-sand); padding: 2px 8px; border-radius: 6px;
+    color: var(--coral); font-weight: 700;
+  }
+  .search-columns {
+    display: flex; gap: 40px; flex: 1;
+  }
+  .search-col {
+    flex: 1; display: flex; flex-direction: column;
+  }
+  .search-col-header {
+    font-size: 16px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 3px solid;
+  }
+  .search-col-header.found { color: var(--sage); border-color: var(--sage); }
+  .search-col-header.missed { color: var(--coral); border-color: var(--coral); }
+  .search-col-header.irrelevant { color: #aaa; border-color: #ddd; }
+
+  .search-result {
+    background: #fff; border-radius: 12px; padding: 16px 20px;
+    margin-bottom: 10px; border-left: 4px solid;
+    font-size: 17px; color: var(--slate); line-height: 1.4;
+  }
+  .search-result.good { border-color: var(--sage); }
+  .search-result.missed { border-color: var(--coral); background: var(--light-coral); }
+  .search-result.irrelevant { border-color: #ddd; opacity: 0.6; }
+  .search-result .matched-word {
+    background: var(--light-sand); padding: 1px 6px; border-radius: 4px;
+    font-weight: 700;
+  }
+  .search-result .result-note {
+    font-size: 13px; color: #999; margin-top: 6px; font-style: italic;
+  }
+  .search-insight {
+    background: var(--light-coral); border-radius: 16px;
+    padding: 24px 32px; font-size: 20px; color: var(--slate);
+    line-height: 1.5; display: flex; gap: 16px; align-items: flex-start;
+    max-width: 900px;
+  }
+  .search-insight .insight-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+
+  /* ===== SLIDE 4: EMBEDDINGS ===== */
+  .embed-demo {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 30px; padding-bottom: 60px;
+  }
+  .embed-transform {
+    display: flex; align-items: center; gap: 40px;
+    width: 100%; max-width: 1600px;
+  }
+  .embed-text-box {
+    background: #fff; border: 3px solid #e0ddd5; border-radius: 16px;
+    padding: 24px 32px; font-size: 22px; color: var(--navy);
+    font-weight: 600; min-width: 340px; text-align: center;
+    position: relative;
+  }
+  .embed-arrow-zone {
+    flex: 0 0 180px; display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+  }
+  .embed-arrow-label {
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--sage); background: var(--light-sage);
+    padding: 6px 16px; border-radius: 20px;
+  }
+  .embed-arrow-svg { width: 120px; height: 30px; }
+  .embed-arrow-svg line {
+    stroke: var(--sage); stroke-width: 3;
+    stroke-dasharray: 1000; stroke-dashoffset: 1000;
+  }
+  .slide.active .embed-arrow-svg line { animation: drawLine 0.8s ease forwards 0.5s; }
+  .embed-vector-box {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--slate) 100%);
+    border-radius: 16px; padding: 24px 28px;
+    font-family: 'Courier New', monospace; font-size: 19px;
+    color: var(--sage); min-width: 460px; text-align: center;
+    letter-spacing: 1px; position: relative;
+  }
+  .embed-vector-box .vec-label {
+    font-family: 'DM Sans', sans-serif; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: rgba(255,255,255,0.4); margin-bottom: 8px;
+  }
+  .embed-explain {
+    background: var(--light-sage); border-radius: 16px;
+    padding: 24px 40px; font-size: 20px; color: var(--slate);
+    text-align: center; line-height: 1.6; max-width: 900px;
+  }
+  .embed-explain strong { color: var(--navy); }
+
+  .embed-examples {
+    display: flex; gap: 20px; width: 100%; max-width: 1600px;
+  }
+  .embed-example-card {
+    flex: 1; background: #fff; border-radius: 16px;
+    padding: 24px; text-align: center;
+    border: 2px solid #e0ddd5;
+  }
+  .embed-example-card .eec-sentence {
+    font-size: 18px; font-weight: 600; color: var(--navy);
+    margin-bottom: 12px; min-height: 50px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .embed-example-card .eec-vector {
+    font-family: 'Courier New', monospace; font-size: 14px;
+    color: var(--sage); background: var(--light-sage);
+    border-radius: 8px; padding: 10px; margin-bottom: 10px;
+  }
+  .embed-example-card .eec-note {
+    font-size: 14px; color: #999; font-style: italic;
+  }
+  .embed-similar-badge {
+    background: var(--coral); color: #fff; font-size: 14px;
+    font-weight: 700; padding: 6px 18px; border-radius: 20px;
+    display: inline-block;
+  }
+
+  /* ===== SLIDE 5: MEANING MAP ===== */
+  .map-demo {
+    flex: 1; display: flex; gap: 40px; padding-bottom: 60px; align-items: stretch;
+  }
+  .map-canvas-area {
+    flex: 1; position: relative; background: #fff;
+    border-radius: 20px; border: 2px solid #e0ddd5;
+    overflow: hidden;
+  }
+  .map-canvas-area svg { width: 100%; height: 100%; }
+  .map-point {
+    cursor: default; transition: transform 0.3s ease;
+  }
+  .map-point:hover { transform: scale(1.15); }
+  .map-cluster-label {
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+  }
+  .map-point-label {
+    font-family: 'DM Sans', sans-serif; font-weight: 500;
+    font-size: 15px;
+  }
+  .map-sidebar {
+    width: 400px; flex-shrink: 0; display: flex;
+    flex-direction: column; gap: 16px;
+  }
+  .map-insight-card {
+    background: #fff; border-radius: 16px; padding: 22px 26px;
+    border: 2px solid #e0ddd5;
+  }
+  .map-insight-card h3 {
+    font-family: 'DM Serif Display', serif; font-size: 20px;
+    color: var(--navy); margin-bottom: 8px;
+  }
+  .map-insight-card p {
+    font-size: 16px; color: #666; line-height: 1.5;
+  }
+  .map-query-card {
+    background: linear-gradient(135deg, var(--navy), var(--slate));
+    border-radius: 16px; padding: 22px 26px; color: #fff;
+  }
+  .map-query-card h3 {
+    font-family: 'DM Serif Display', serif; font-size: 20px;
+    margin-bottom: 10px;
+  }
+  .map-query-card .query-text {
+    font-size: 18px; font-weight: 600; color: var(--sand);
+    margin-bottom: 12px;
+  }
+  .map-query-card .nearest {
+    font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.5;
+  }
+  .map-query-card .nearest span {
+    color: var(--sage); font-weight: 600;
+  }
+  .map-legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666;
+  }
+  .legend-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+  }
+
+  /* ===== SLIDE 6: RAG PIPELINE ===== */
+  .pipeline-demo {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; padding-bottom: 60px;
+  }
+  .pipeline-flow {
+    display: flex; align-items: center; gap: 0;
+    width: 100%; max-width: 1700px;
+  }
+  .pipeline-step {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+    position: relative;
+  }
+  .ps-icon-wrap {
+    width: 80px; height: 80px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; margin-bottom: 10px;
+    position: relative;
+  }
+  .ps-icon-wrap.step-1 { background: var(--light-coral); }
+  .ps-icon-wrap.step-2 { background: var(--light-sage); }
+  .ps-icon-wrap.step-3 { background: var(--light-sand); }
+  .ps-icon-wrap.step-4 { background: #e8e4f0; }
+  .ps-icon-wrap.step-5 { background: var(--light-coral); }
+  .ps-number {
+    position: absolute; top: -8px; right: -8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--navy); color: #fff; font-size: 14px;
+    font-weight: 700; display: flex; align-items: center;
+    justify-content: center;
+  }
+  .ps-title {
+    font-weight: 700; font-size: 18px; color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .ps-desc {
+    font-size: 14px; color: #888; line-height: 1.4;
+    max-width: 180px;
+  }
+  .pipeline-arrow {
+    flex: 0 0 60px; display: flex; align-items: center;
+    justify-content: center; margin-bottom: 30px;
+  }
+  .pipeline-arrow svg { width: 50px; height: 24px; }
+  .pipeline-arrow svg path { fill: #ccc; }
+
+  .pipeline-summary {
+    background: linear-gradient(135deg, var(--navy), var(--slate));
+    border-radius: 20px; padding: 32px 50px; color: #fff;
+    font-size: 22px; line-height: 1.6; text-align: center;
+    max-width: 1200px;
+  }
+  .pipeline-summary strong { color: var(--sand); }
+
+  /* ===== SLIDE 7: RECAP ===== */
+  .recap-slide {
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #3d405b 100%);
+  }
+  .recap-content { max-width: 1100px; }
+  .recap-slide h1 { color: #fff; font-size: 56px; margin-bottom: 40px; }
+  .recap-cards {
+    display: flex; gap: 30px; margin-bottom: 40px;
+  }
+  .recap-card {
+    flex: 1; background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
+    border-radius: 20px; padding: 36px 28px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .recap-card .rc-icon {
+    font-size: 48px; margin-bottom: 16px;
+  }
+  .recap-card h3 {
+    font-family: 'DM Serif Display', serif; font-size: 24px;
+    color: #fff; margin-bottom: 10px;
+  }
+  .recap-card p {
+    font-size: 17px; color: rgba(255,255,255,0.6); line-height: 1.5;
+  }
+  .recap-tagline {
+    font-size: 24px; color: var(--sand);
+    font-family: 'DM Serif Display', serif;
+  }
+
+  /* Animation for pipeline flow */
+  .slide.active .pipeline-step {
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+  .slide.active .pipeline-step:nth-child(1) { animation-delay: 0.1s; }
+  .slide.active .pipeline-step:nth-child(2) { animation-delay: 0.35s; }
+  .slide.active .pipeline-step:nth-child(3) { animation-delay: 0.6s; }
+  .slide.active .pipeline-step:nth-child(4) { animation-delay: 0.85s; }
+  .slide.active .pipeline-step:nth-child(5) { animation-delay: 1.1s; }
+  .slide.active .pipeline-arrow {
+    opacity: 0;
+    animation: fadeIn 0.3s ease forwards;
+  }
+  .slide.active .pipeline-arrow:nth-of-type(2) { animation-delay: 0.25s; }
+  .slide.active .pipeline-arrow:nth-of-type(4) { animation-delay: 0.5s; }
+  .slide.active .pipeline-arrow:nth-of-type(6) { animation-delay: 0.75s; }
+  .slide.active .pipeline-arrow:nth-of-type(8) { animation-delay: 1.0s; }
+
+  /* Map point animations */
+  .slide.active .map-point-anim {
+    opacity: 0;
+    animation: popIn 0.4s ease forwards;
+  }
+
+  /* Keyboard hint */
+  .key-hint {
+    position: absolute; bottom: 80px; right: 80px;
+    font-size: 13px; color: #aaa; z-index: 50;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .key-hint kbd {
+    background: #eee; border: 1px solid #ccc; border-radius: 4px;
+    padding: 2px 8px; font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+  }
+
+  /* ===== PIPELINE CONTEXT PAYOFF ===== */
+  .pipeline-payoff {
+    display: flex; align-items: stretch; gap: 32px;
+    width: 100%; max-width: 1700px; margin-top: 4px;
+  }
+  .payoff-docs {
+    flex: 1; display: flex; flex-direction: column; gap: 6px;
+    justify-content: center;
+  }
+  .payoff-doc {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; border-radius: 10px; font-size: 15px;
+    color: #aaa; background: #f5f3ef; border: 2px solid transparent;
+    transition: all 0.5s ease; opacity: 0.4;
+  }
+  .payoff-doc .pd-icon { font-size: 16px; }
+  .payoff-doc.selected {
+    opacity: 1; background: var(--light-sage); border-color: var(--sage);
+    color: var(--navy); font-weight: 600;
+  }
+  .payoff-doc.selected .pd-check {
+    color: var(--sage); font-weight: 700; margin-left: auto;
+  }
+  .payoff-arrow-zone {
+    flex: 0 0 80px; display: flex; align-items: center; justify-content: center;
+  }
+  .payoff-arrow-zone svg { width: 60px; height: 30px; }
+  .payoff-arrow-zone svg path { fill: var(--sage); }
+  .payoff-cw {
+    width: 420px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--slate) 100%);
+    border-radius: 16px; padding: 20px; display: flex; flex-direction: column;
+    position: relative;
+  }
+  .payoff-cw .pcw-header {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(255,255,255,0.4); margin-bottom: 4px;
+  }
+  .payoff-cw .pcw-label {
+    font-family: 'DM Serif Display', serif; font-size: 20px;
+    color: #fff; margin-bottom: 12px;
+  }
+  .payoff-cw .pcw-slots { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .pcw-slot {
+    flex: 1; border: 2px dashed rgba(255,255,255,0.12);
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 13px;
+    color: rgba(255,255,255,0.2); transition: all 0.5s ease;
+    padding: 0 12px;
+  }
+  .pcw-slot.filled {
+    border-style: solid; border-color: var(--sage);
+    background: rgba(129, 178, 154, 0.2);
+    color: rgba(255,255,255,0.9); font-weight: 600;
+  }
+  .payoff-cw .pcw-success {
+    text-align: center; color: var(--sage); font-weight: 700;
+    font-size: 14px; margin-top: 8px; opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .payoff-cw .pcw-success.show { opacity: 1; }
+  .payoff-label {
+    text-align: center; font-size: 14px; color: #888;
+    margin-top: 2px; font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="viewport-container" id="viewportContainer">
+<div class="design-surface" id="designSurface">
+
+  <!-- ====== SLIDE 1: TITLE ====== -->
+  <div class="slide slide-title active" id="slide-0">
+    <div class="title-content">
+      <div class="anim-item">
+        <div class="slide-number">An Introduction To</div>
+        <h1>How AI Gets the<br>Right Information</h1>
+      </div>
+      <div class="anim-item">
+        <p class="subtitle">Understanding <strong style="color:var(--sand);">Retrieval-Augmented Generation (RAG)</strong>,<br>vector embeddings, and why "just searching for it" isn't enough</p>
+      </div>
+      <div class="anim-item title-decoration">
+        <span class="td-1">Context</span>
+        <span class="td-2">Embeddings</span>
+        <span class="td-3">Retrieval</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SLIDE 2: THE PROBLEM ====== -->
+  <div class="slide" id="slide-1">
+    <div class="slide-number anim-item">The Problem</div>
+    <h2 class="anim-item">AI Can't Read Everything at Once</h2>
+    <p class="subtitle anim-item">Large Language Models have a limited "context window" — like a desk that can only hold so many papers at a time.</p>
+    <div class="context-demo">
+      <div class="context-left anim-item">
+        <p style="font-size:18px; color:#888; margin-bottom:12px; font-weight:600;">Your Organization's Documents</p>
+        <div class="doc-stack" id="docStack">
+          <div class="doc-item"><div class="doc-icon" style="background:var(--light-coral)">📋</div>HR Policy Manual (240 pages)</div>
+          <div class="doc-item"><div class="doc-icon" style="background:var(--light-sage)">📊</div>Q3 Financial Report</div>
+          <div class="doc-item"><div class="doc-icon" style="background:var(--light-sand)">📝</div>Employee Handbook</div>
+          <div class="doc-item"><div class="doc-icon" style="background:#e8e4f0">💻</div>IT Security Guidelines</div>
+          <div class="doc-item"><div class="doc-icon" style="background:var(--light-coral)">📞</div>Customer Service Scripts</div>
+          <div class="doc-item"><div class="doc-icon" style="background:var(--light-sage)">⚖️</div>Legal Compliance Docs</div>
+          <div class="doc-item"><div class="doc-icon" style="background:var(--light-sand)">📈</div>Sales Playbook</div>
+          <div class="doc-item"><div class="doc-icon" style="background:#e8e4f0">🔧</div>Technical Documentation</div>
+        </div>
+      </div>
+      <div class="context-right anim-item">
+        <div class="context-window-visual" id="contextWindow">
+          <div class="cw-header">AI Model</div>
+          <div class="cw-label">Context Window</div>
+          <div class="cw-slots">
+            <div class="cw-slot" id="cwSlot0">Empty slot</div>
+            <div class="cw-slot" id="cwSlot1">Empty slot</div>
+            <div class="cw-slot" id="cwSlot2">Empty slot</div>
+            <div class="cw-slot" id="cwSlot3">Empty slot</div>
+          </div>
+          <div class="cw-overflow-msg" id="cwOverflow">⚠️ Can't fit everything!</div>
+        </div>
+        <p style="font-size:16px; color:#888; margin-top:14px; text-align:center;">We need to choose <strong style="color:var(--coral)">the right</strong> information to include</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SLIDE 3: KEYWORD SEARCH FAILS ====== -->
+  <div class="slide" id="slide-2">
+    <div class="slide-number anim-item">The Naive Approach</div>
+    <h2 class="anim-item">Why Keyword Search Falls Short</h2>
+    <div class="search-demo">
+      <div class="anim-item">
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <span class="query-text">"What is our <span class="highlight-word">sick leave</span> policy?"</span>
+        </div>
+      </div>
+      <div class="search-columns anim-item">
+        <div class="search-col">
+          <div class="search-col-header found">✓ What keyword search finds</div>
+          <div class="search-result good">
+            "<span class="matched-word">Sick leave</span> is accrued at 1 day per month of service..."
+            <div class="result-note">Direct keyword match ✓</div>
+          </div>
+          <div class="search-result good">
+            "Employees must notify HR for <span class="matched-word">sick leave</span> exceeding 3 days..."
+            <div class="result-note">Direct keyword match ✓</div>
+          </div>
+        </div>
+        <div class="search-col">
+          <div class="search-col-header missed">✗ What keyword search misses</div>
+          <div class="search-result missed">
+            "Paid time off for <strong>medical appointments</strong> requires 48-hour notice..."
+            <div class="result-note">Relevant! But doesn't say "sick leave"</div>
+          </div>
+          <div class="search-result missed">
+            "Short-term <strong>disability benefits</strong> begin after 5 consecutive absences..."
+            <div class="result-note">Highly relevant! But uses different words</div>
+          </div>
+          <div class="search-result missed">
+            "The <strong>wellness program</strong> provides mental health days..."
+            <div class="result-note">Related concept, different terminology</div>
+          </div>
+        </div>
+        <div class="search-col" style="flex:0.7">
+          <div class="search-col-header irrelevant">⚬ False positives</div>
+          <div class="search-result irrelevant">
+            "The team is <span class="matched-word">sick</span> of delays — <span class="matched-word">leave</span> your feedback in Jira..."
+            <div class="result-note">Matched the words, not the meaning!</div>
+          </div>
+        </div>
+      </div>
+      <div class="search-insight anim-item">
+        <span class="insight-icon">💡</span>
+        <div><strong>The gap:</strong> Keyword search matches <em>words</em>, not <em>meaning</em>. It can't understand that "medical appointments," "disability benefits," and "sick leave" are all related concepts.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SLIDE 4: EMBEDDINGS ====== -->
+  <div class="slide" id="slide-3">
+    <div class="slide-number anim-item">The Breakthrough</div>
+    <h2 class="anim-item">Turning Meaning into Numbers</h2>
+    <p class="subtitle anim-item">What if we could convert text into numbers that capture its <strong>meaning</strong>?</p>
+    <div class="embed-demo">
+      <div class="embed-transform anim-item">
+        <div class="embed-text-box">
+          "What is our sick leave policy?"
+        </div>
+        <div class="embed-arrow-zone">
+          <div class="embed-arrow-label">Embedding Model</div>
+          <svg class="embed-arrow-svg" viewBox="0 0 120 30">
+            <line x1="0" y1="15" x2="100" y2="15" marker-end="url(#arrowGreen)"/>
+            <defs><marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#81b29a"/></marker></defs>
+          </svg>
+        </div>
+        <div class="embed-vector-box">
+          <div class="vec-label">Vector Embedding (768 dimensions)</div>
+          [ 0.234, -0.891, 0.142, 0.567, -0.321, 0.089, ... ]
+        </div>
+      </div>
+      <div class="embed-explain anim-item" style="flex-direction:column; display:flex; gap:10px;">
+        <div>Each number captures a <strong>facet of meaning</strong> — topic, intent, tone, relationships. Sentences with <strong>similar meanings</strong> get <strong>similar numbers</strong>, even if they use completely different words.</div>
+        <div style="font-size:17px; color:#888; border-top:1px solid #ccc; padding-top:10px;">
+          <strong style="color:var(--navy);">Important distinction:</strong> The models that create these embeddings are <strong>specialized AI models</strong> — trained on billions of pages of text to <em>understand</em> meaning. They're different from the chatbot-style AI (like ChatGPT or Claude) that <em>generates</em> text. Think of them as two specialists: one reads and understands, the other writes.
+        </div>
+      </div>
+      <div class="embed-examples anim-item">
+        <div class="embed-example-card">
+          <div class="eec-sentence">"What is our sick leave policy?"</div>
+          <div class="eec-vector">[ 0.234, -0.891, 0.142, 0.567, ... ]</div>
+          <div class="eec-note">Our original question</div>
+        </div>
+        <div style="display:flex; align-items:center; padding-bottom:30px;">
+          <div class="embed-similar-badge">Numbers<br>are close! →</div>
+        </div>
+        <div class="embed-example-card" style="border-color:var(--sage);">
+          <div class="eec-sentence">"Paid time off for medical appointments"</div>
+          <div class="eec-vector">[ 0.251, -0.873, 0.138, 0.590, ... ]</div>
+          <div class="eec-note">Different words, similar meaning → similar numbers!</div>
+        </div>
+        <div style="display:flex; align-items:center; padding-bottom:30px;">
+          <div class="embed-similar-badge" style="background:#aaa;">Numbers<br>are far! →</div>
+        </div>
+        <div class="embed-example-card" style="border-color:var(--coral);">
+          <div class="eec-sentence">"Sick bass guitar riff"</div>
+          <div class="eec-vector">[ -0.672, 0.401, 0.823, -0.109, ... ]</div>
+          <div class="eec-note">Same word "sick" but completely different meaning</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SLIDE 5: MEANING MAP ====== -->
+  <div class="slide" id="slide-4">
+    <div class="slide-number anim-item">Visualizing It</div>
+    <h2 class="anim-item">The Meaning Map</h2>
+    <div class="map-demo">
+      <div class="map-canvas-area anim-item">
+        <svg viewBox="0 0 1080 730" id="meaningMap">
+          <!-- Grid lines -->
+          <defs>
+            <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#f0ede8" stroke-width="1"/>
+            </pattern>
+            <!-- Glow filter -->
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="1080" height="730" fill="url(#grid)"/>
+
+          <!-- Cluster: Time Off / Leave (top-left area) -->
+          <ellipse cx="260" cy="200" rx="200" ry="150" fill="rgba(129,178,154,0.08)" stroke="rgba(129,178,154,0.2)" stroke-width="2" stroke-dasharray="8 4"/>
+          <text x="150" y="75" class="map-cluster-label" fill="#81b29a">Time Off &amp; Leave</text>
+
+          <g class="map-point map-point-anim" style="animation-delay:0.3s">
+            <circle cx="200" cy="160" r="10" fill="#81b29a" filter="url(#glow)"/>
+            <text x="220" y="165" class="map-point-label" fill="#444">"Sick leave policy"</text>
+          </g>
+          <g class="map-point map-point-anim" style="animation-delay:0.5s">
+            <circle cx="280" cy="220" r="10" fill="#81b29a"/>
+            <text x="300" y="225" class="map-point-label" fill="#444">"PTO guidelines"</text>
+          </g>
+          <g class="map-point map-point-anim" style="animation-delay:0.7s">
+            <circle cx="230" cy="280" r="10" fill="#81b29a"/>
+            <text x="250" y="285" class="map-point-label" fill="#444">"Medical appointments"</text>
+          </g>
+          <g class="map-point map-point-anim" style="animation-delay:0.6s">
+            <circle cx="340" cy="170" r="10" fill="#81b29a"/>
+            <text x="360" y="175" class="map-point-label" fill="#444">"Disability benefits"</text>
+          </g>
+          <g class="map-point map-point-anim" style="animation-delay:0.8s">
+            <circle cx="170" cy="240" r="10" fill="#81b29a"/>
+            <text x="100" y="265" class="map-point-label" fill="#444">"Wellness days"</text>
+          </g>
+
+          <!-- Cluster: IT & Security (bottom-right area) -->
+          <ellipse cx="800" cy="530" rx="190" ry="130" fill="rgba(224,122,95,0.08)" stroke="rgba(224,122,95,0.2)" stroke-width="2" stroke-dasharray="8 4"/>
+          <text x="710" y="410" class="map-cluster-label" fill="#e07a5f">IT &amp; Security</text>
+
+          <g class="map-point map-point-anim" style="animation-delay:0.9s">
+            <circle cx="760" cy="490" r="10" fill="#e07a5f"/>
+            <text x="780" y="495" class="map-point-label" fill="#444">"Password policy"</text>
+          </g>
+          <g class="map-point map-point-anim" style="animation-delay:1.0s">
+            <circle cx="830" cy="560" r="10" fill="#e07a5f"/>
+            <text x="850" y="565" class="map-point-label" fill="#444">"VPN access"</text>
+          </g>
+          <g class="map-point map-point-anim" style="animation-delay:1.1s">
+            <circle cx="700" cy="550" r="10" fill="#e07a5f"/>
+            <text x="620" y="575" class="map-point-label" fill="#444">"Data encryption"</text>
+          </g>
+
+          <!-- Cluster: Finance (middle-right) -->
+          <ellipse cx="780" cy="200" rx="170" ry="120" fill="rgba(242,204,143,0.12)" stroke="rgba(242,204,143,0.3)" stroke-width="2" stroke-dasharray="8 4"/>
+          <text x="700" y="100" class="map-cluster-label" fill="#c9a43e">Finance &amp; Expenses</text>
+
+          <g class="map-point map-point-anim" style="animation-delay:0.85s">
+            <circle cx="750" cy="180" r="10" fill="#c9a43e"/>
+            <text x="770" y="185" class="map-point-label" fill="#444">"Travel expenses"</text>
+          </g>
+          <g class="map-point map-point-anim" style="animation-delay:0.95s">
+            <circle cx="830" cy="230" r="10" fill="#c9a43e"/>
+            <text x="850" y="235" class="map-point-label" fill="#444">"Budget approvals"</text>
+          </g>
+
+          <!-- Outlier -->
+          <g class="map-point map-point-anim" style="animation-delay:1.2s">
+            <circle cx="550" cy="620" r="10" fill="#bbb"/>
+            <text x="570" y="625" class="map-point-label" fill="#999">"Sick bass guitar riff" 🎸</text>
+          </g>
+
+          <!-- Query point with pulse -->
+          <g class="map-point map-point-anim" style="animation-delay:1.4s">
+            <circle cx="240" cy="200" r="26" fill="none" stroke="var(--navy)" stroke-width="3" opacity="0.3">
+              <animate attributeName="r" values="20;35;20" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="240" cy="200" r="7" fill="var(--navy)"/>
+            <text x="215" y="138" class="map-point-label" fill="var(--navy)" font-weight="700" font-size="15">YOUR QUERY</text>
+          </g>
+        </svg>
+      </div>
+      <div class="map-sidebar">
+        <div class="map-insight-card anim-item">
+          <h3>How to Read This</h3>
+          <p>Each dot represents a chunk of text from your documents, plotted by its <strong>meaning</strong>. Points that are close together are semantically similar — even if they use completely different words.</p>
+        </div>
+        <div class="map-query-card anim-item">
+          <h3>🔍 Your Question</h3>
+          <div class="query-text">"What is our sick leave policy?"</div>
+          <div class="nearest">
+            Nearest matches:<br>
+            <span>• Sick leave policy</span><br>
+            <span>• PTO guidelines</span><br>
+            <span>• Medical appointments</span><br>
+            <span>• Disability benefits</span><br><br>
+            Far away: "Sick bass guitar riff" 🎸
+          </div>
+        </div>
+        <div class="map-insight-card anim-item">
+          <h3>The Key Insight</h3>
+          <p>By finding the <strong>nearest neighbors</strong> in this space, we retrieve documents by <em>meaning</em>, not just matching words.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SLIDE 6: RAG PIPELINE ====== -->
+  <div class="slide" id="slide-5">
+    <div class="slide-number anim-item">Putting It Together</div>
+    <h2 class="anim-item" style="text-align:center;">The RAG Pipeline</h2>
+    <p class="subtitle anim-item" style="text-align:center; margin:0 auto 16px; font-size:20px;">Retrieval-Augmented Generation: giving the AI the <strong>right</strong> information at the <strong>right</strong> time</p>
+    <div class="pipeline-demo">
+      <div class="pipeline-flow">
+        <!-- Step 1 -->
+        <div class="pipeline-step">
+          <div class="ps-icon-wrap step-1"><span class="ps-number">1</span>❓</div>
+          <div class="ps-title">Your Question</div>
+          <div class="ps-desc">"What is our sick leave policy?"</div>
+        </div>
+        <div class="pipeline-arrow"><svg viewBox="0 0 50 24"><path d="M0 10h38l-8-8 3-2 12 12-12 12-3-2 8-8H0z"/></svg></div>
+
+        <!-- Step 2 -->
+        <div class="pipeline-step">
+          <div class="ps-icon-wrap step-2"><span class="ps-number">2</span>🔢</div>
+          <div class="ps-title">Convert to Vector</div>
+          <div class="ps-desc">Turn the question into numbers that capture meaning</div>
+        </div>
+        <div class="pipeline-arrow"><svg viewBox="0 0 50 24"><path d="M0 10h38l-8-8 3-2 12 12-12 12-3-2 8-8H0z"/></svg></div>
+
+        <!-- Step 3 -->
+        <div class="pipeline-step">
+          <div class="ps-icon-wrap step-3"><span class="ps-number">3</span>🗺️</div>
+          <div class="ps-title">Find Nearest Matches</div>
+          <div class="ps-desc">Search the meaning map for the closest documents</div>
+        </div>
+        <div class="pipeline-arrow"><svg viewBox="0 0 50 24"><path d="M0 10h38l-8-8 3-2 12 12-12 12-3-2 8-8H0z"/></svg></div>
+
+        <!-- Step 4 -->
+        <div class="pipeline-step">
+          <div class="ps-icon-wrap step-4"><span class="ps-number">4</span>📋</div>
+          <div class="ps-title">Pack the Context</div>
+          <div class="ps-desc">Feed only the most relevant info into the AI</div>
+        </div>
+        <div class="pipeline-arrow"><svg viewBox="0 0 50 24"><path d="M0 10h38l-8-8 3-2 12 12-12 12-3-2 8-8H0z"/></svg></div>
+
+        <!-- Step 5 -->
+        <div class="pipeline-step">
+          <div class="ps-icon-wrap step-5"><span class="ps-number">5</span>💬</div>
+          <div class="ps-title">AI Answers</div>
+          <div class="ps-desc">A smart, informed response based on your actual documents</div>
+        </div>
+      </div>
+
+      <!-- Context Window Payoff -->
+      <div class="pipeline-payoff anim-item" style="animation-delay:1.5s;">
+        <div class="payoff-docs">
+          <div class="payoff-doc" id="pd0"><span class="pd-icon">📋</span> HR Policy Manual<span class="pd-check"></span></div>
+          <div class="payoff-doc" id="pd1"><span class="pd-icon">📊</span> Q3 Financial Report<span class="pd-check"></span></div>
+          <div class="payoff-doc" id="pd2"><span class="pd-icon">📝</span> Employee Handbook<span class="pd-check"></span></div>
+          <div class="payoff-doc" id="pd3"><span class="pd-icon">💻</span> IT Security Guidelines<span class="pd-check"></span></div>
+          <div class="payoff-doc" id="pd4"><span class="pd-icon">📞</span> Customer Service Scripts<span class="pd-check"></span></div>
+          <div class="payoff-doc" id="pd5"><span class="pd-icon">⚖️</span> Legal Compliance Docs<span class="pd-check"></span></div>
+          <div class="payoff-doc" id="pd6"><span class="pd-icon">📈</span> Sales Playbook<span class="pd-check"></span></div>
+          <div class="payoff-doc" id="pd7"><span class="pd-icon">🔧</span> Technical Documentation<span class="pd-check"></span></div>
+          <div class="payoff-label">All your documents</div>
+        </div>
+        <div class="payoff-arrow-zone">
+          <svg viewBox="0 0 60 30"><path d="M0 13h44l-8-8 3-3 14 13-14 13-3-3 8-8H0z"/></svg>
+        </div>
+        <div class="payoff-cw" id="payoffCW">
+          <div class="pcw-header">AI Model</div>
+          <div class="pcw-label">Context Window</div>
+          <div class="pcw-slots">
+            <div class="pcw-slot" id="pcwSlot0">Empty</div>
+            <div class="pcw-slot" id="pcwSlot1">Empty</div>
+            <div class="pcw-slot" id="pcwSlot2">Empty</div>
+            <div class="pcw-slot" id="pcwSlot3">Empty</div>
+          </div>
+          <div class="pcw-success" id="pcwSuccess">✓ Right information, ready to answer!</div>
+        </div>
+      </div>
+
+      <div class="pipeline-summary anim-item" style="animation-delay:1.7s; padding: 24px 50px; font-size:20px;">
+        <strong>RAG = Retrieval-Augmented Generation</strong><br>
+        Instead of hoping the AI "knows" the answer, we <strong>retrieve</strong> the right information and <strong>give it</strong> to the AI — producing answers that are accurate, up-to-date, and grounded in your actual data.
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SLIDE 7: RECAP ====== -->
+  <div class="slide recap-slide" id="slide-6">
+    <div class="recap-content">
+      <h1 class="anim-item">Key Takeaways</h1>
+      <div class="recap-cards">
+        <div class="recap-card anim-item">
+          <div class="rc-icon">📦</div>
+          <h3>Limited Context</h3>
+          <p>AI models can only look at so much information at once — you need to be selective.</p>
+        </div>
+        <div class="recap-card anim-item">
+          <div class="rc-icon">🔢</div>
+          <h3>Meaning as Numbers</h3>
+          <p>Embeddings capture the meaning of text as numbers, so similar ideas have similar vectors.</p>
+        </div>
+        <div class="recap-card anim-item">
+          <div class="rc-icon">🎯</div>
+          <h3>Smarter Retrieval</h3>
+          <p>RAG finds documents by meaning, not just keywords — then feeds the best matches to the AI.</p>
+        </div>
+      </div>
+      <p class="recap-tagline anim-item">The smarter the retrieval, the better the answer.</p>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-bar">
+    <button class="nav-btn prev" id="prevBtn" onclick="navigate(-1)" disabled>← Back</button>
+    <div class="progress-dots" id="progressDots"></div>
+    <button class="nav-btn next" id="nextBtn" onclick="navigate(1)">Next →</button>
+  </div>
+
+  <div class="key-hint">Press <kbd>←</kbd> <kbd>→</kbd> arrow keys or click buttons</div>
+
+</div>
+</div>
+
+<script>
+const DESIGN_WIDTH = 1920;
+const DESIGN_HEIGHT = 1080;
+const TOTAL_SLIDES = 7;
+let currentSlide = 0;
+
+function autoResize() {
+  const container = document.getElementById('viewportContainer');
+  const surface = document.getElementById('designSurface');
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let cw, ch;
+  if (vw / vh > 16 / 9) { ch = vh; cw = ch * (16 / 9); }
+  else { cw = vw; ch = cw * (9 / 16); }
+  container.style.width = cw + 'px';
+  container.style.height = ch + 'px';
+  const scale = cw / DESIGN_WIDTH;
+  surface.style.transform = `scale(${scale})`;
+}
+
+function buildDots() {
+  const dotsEl = document.getElementById('progressDots');
+  for (let i = 0; i < TOTAL_SLIDES; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goToSlide(i);
+    d.style.cursor = 'pointer';
+    dotsEl.appendChild(d);
+  }
+}
+
+function goToSlide(n) {
+  if (n < 0 || n >= TOTAL_SLIDES) return;
+  document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+  currentSlide = n;
+  document.getElementById(`slide-${currentSlide}`).classList.add('active');
+  updateNav();
+  // Run slide-specific animations
+  if (currentSlide === 1) animateContextWindow();
+  if (currentSlide === 5) animatePayoff();
+}
+
+function navigate(dir) { goToSlide(currentSlide + dir); }
+
+function updateNav() {
+  document.getElementById('prevBtn').disabled = currentSlide === 0;
+  document.getElementById('nextBtn').disabled = currentSlide === TOTAL_SLIDES - 1;
+  const dots = document.querySelectorAll('.dot');
+  dots.forEach((d, i) => {
+    d.className = 'dot';
+    if (i === currentSlide) d.classList.add('active');
+    else if (i < currentSlide) d.classList.add('visited');
+  });
+}
+
+// Slide 2 animation: fill context window
+function animateContextWindow() {
+  const labels = ['HR Policy Manual', 'Q3 Financial Report', 'Employee Handbook', 'IT Security...'];
+  const overflow = document.getElementById('cwOverflow');
+  overflow.classList.remove('show');
+  for (let i = 0; i < 4; i++) {
+    const slot = document.getElementById(`cwSlot${i}`);
+    slot.className = 'cw-slot';
+    slot.textContent = 'Empty slot';
+  }
+  labels.forEach((label, i) => {
+    setTimeout(() => {
+      const slot = document.getElementById(`cwSlot${i}`);
+      slot.classList.add('filled');
+      slot.textContent = label;
+    }, 600 + i * 500);
+  });
+  setTimeout(() => {
+    document.getElementById('cwSlot3').classList.add('overflow');
+    overflow.classList.add('show');
+  }, 3200);
+}
+
+// Slide 6 animation: payoff - select right docs and fill context window
+function animatePayoff() {
+  // Reset state
+  const selectedIndices = [0, 2, 5]; // HR Policy, Employee Handbook, Legal Compliance
+  const selectedLabels = ['📋 HR Policy Manual', '📝 Employee Handbook', '⚖️ Legal Compliance'];
+  const allDocs = 8;
+
+  for (let i = 0; i < allDocs; i++) {
+    const doc = document.getElementById(`pd${i}`);
+    doc.classList.remove('selected');
+    const check = doc.querySelector('.pd-check');
+    check.textContent = '';
+  }
+  for (let i = 0; i < 4; i++) {
+    const slot = document.getElementById(`pcwSlot${i}`);
+    slot.className = 'pcw-slot';
+    slot.textContent = 'Empty';
+  }
+  document.getElementById('pcwSuccess').classList.remove('show');
+
+  // Phase 1: Highlight selected docs one by one
+  selectedIndices.forEach((idx, i) => {
+    setTimeout(() => {
+      const doc = document.getElementById(`pd${idx}`);
+      doc.classList.add('selected');
+      doc.querySelector('.pd-check').textContent = '✓';
+    }, 2000 + i * 400);
+  });
+
+  // Phase 2: Fill context window slots
+  selectedLabels.forEach((label, i) => {
+    setTimeout(() => {
+      const slot = document.getElementById(`pcwSlot${i}`);
+      slot.classList.add('filled');
+      slot.textContent = label;
+    }, 3600 + i * 400);
+  });
+
+  // Phase 3: Add the question to the last slot
+  setTimeout(() => {
+    const slot = document.getElementById('pcwSlot3');
+    slot.classList.add('filled');
+    slot.style.borderColor = 'var(--sand)';
+    slot.style.background = 'rgba(242, 204, 143, 0.2)';
+    slot.textContent = '❓ "What is our sick leave policy?"';
+  }, 5000);
+
+  // Phase 4: Success message
+  setTimeout(() => {
+    document.getElementById('pcwSuccess').classList.add('show');
+  }, 5600);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+});
+
+// Init
+autoResize();
+buildDots();
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(autoResize, 50);
+});
+</script>
+</body>
+</html>

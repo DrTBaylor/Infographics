@@ -17,6 +17,7 @@ This is not meant as a public repo just yet.  Many of the graphics are undevelop
 - [LLM Landscape](llm-landscape.html)
 - [Modes of Processing Infographic](modes-of-processing-infographic.html) (Fail)
 - [Prompting Strategies Infographic](prompting-strategies-infographic.html) (Fail)
+- [RAG — How AI Gets the Right Information](rag-presentation.html)
 
 ## Digital Logic & Circuits
 
