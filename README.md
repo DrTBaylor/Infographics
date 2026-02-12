@@ -2,7 +2,7 @@
 
 Interactive HTML figures and infographics hosted at [drtlinks.org](https://drtlinks.org)
 
-This is not meant as a public repo just yet.  Many of the graphics are undevelopment or have been abandoned as failed attempts.  
+This is not meant as a public repo just yet.  Many of the graphics are under development or have been abandoned as failed attempts.  
 
 ## AI & Prompting
 
