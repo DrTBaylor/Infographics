@@ -90,6 +90,7 @@ This is not meant as a public repo just yet.  Many of the graphics are under dev
 - [Modes of Processing Infographic](modes-of-processing-infographic.html) (Fail)
 - [Prompting Strategies Infographic](prompting-strategies-infographic.html) (Fail)
 - [RAG — How AI Gets the Right Information](rag-presentation.html)
+- [AI Creator Ethics — The Tradeoff Compass](AIThoughtCalculator.html)
 
 ## Demos
 

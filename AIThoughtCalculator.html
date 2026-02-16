@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Creator Ethics — The Tradeoff Compass</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; background: #0f0f1a;
+    color: #e8e6e3; font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+    border-bottom: 1px solid #222244;
+    padding: 28px 32px 20px; text-align: center;
+  }
+  .header-tag {
+    font-size: 10px; font-weight: 700; color: #f39c12;
+    letter-spacing: 3px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace; margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: 30px; font-weight: 800;
+    font-family: 'Playfair Display', serif; margin: 0 0 6px;
+    background: linear-gradient(135deg, #e8e6e3, #b0aea8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header p {
+    font-size: 13px; color: #777; max-width: 560px;
+    margin: 0 auto; line-height: 1.55;
+  }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex; justify-content: center; gap: 0;
+    padding: 16px 24px 0; max-width: 500px; margin: 0 auto;
+  }
+  .tab-btn {
+    flex: 1; padding: 10px 20px; border: 1px solid #222244;
+    background: #13132a; color: #666; font-size: 12px;
+    font-weight: 700; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .tab-btn:first-child { border-radius: 10px 0 0 10px; }
+  .tab-btn:last-child { border-radius: 0 10px 10px 0; }
+  .tab-btn.active {
+    background: #1a1a2e; color: #f39c12;
+    border-color: #f39c1244;
+  }
+  .tab-btn:hover:not(.active) { color: #999; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Preset dropdown */
+  .presets {
+    display: flex; gap: 12px; padding: 16px 24px;
+    justify-content: center; align-items: center; flex-wrap: wrap;
+  }
+  .preset-select {
+    padding: 9px 16px; border-radius: 10px;
+    border: 1px solid #333355; background: #1a1a2e;
+    color: #e8e6e3; font-size: 13px;
+    font-family: 'DM Sans', sans-serif; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    min-width: 300px; outline: none;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f39c12' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center; padding-right: 38px;
+  }
+  .preset-select:hover { border-color: #f39c12; }
+  .preset-select:focus { border-color: #f39c12; box-shadow: 0 0 0 2px rgba(243,156,18,0.2); }
+  .preset-select option { background: #1a1a2e; color: #e8e6e3; }
+  .preset-select optgroup { color: #f39c12; font-style: normal; font-weight: 700; }
+
+  /* Active factors callout */
+  .active-factors-note {
+    text-align: center; font-size: 11px; color: #666;
+    padding: 0 24px 8px; font-style: italic;
+  }
+  .active-factors-note strong { color: #f39c12; font-style: normal; }
+
+  /* Slider panels */
+  .main-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; padding: 8px 24px 24px;
+    max-width: 1100px; margin: 0 auto;
+  }
+  @media (max-width: 740px) { .main-grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: #13132a; border: 1px solid #222244;
+    border-radius: 16px; padding: 24px; min-height: 200px;
+  }
+  .panel-tag {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-tag .bar { width: 20px; height: 2px; display: inline-block; }
+  .panel-sub { font-size: 12px; color: #666; margin-bottom: 20px; }
+
+  /* Sliders */
+  .slider-group { margin-bottom: 22px; animation: fadeSlide 0.35s ease-out; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slider-header {
+    display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;
+  }
+  .slider-label { font-size: 13px; font-weight: 600; color: #e8e6e3; }
+  .slider-value {
+    font-size: 16px; font-weight: 700; font-family: 'Space Mono', monospace;
+    min-width: 28px; text-align: right; transition: color 0.3s;
+  }
+  .slider-desc { font-size: 11px; color: #777; margin-bottom: 8px; line-height: 1.4; }
+  .slider-wrap { position: relative; height: 32px; display: flex; align-items: center; }
+  .slider-track { position: absolute; width: 100%; height: 6px; background: #2a2a3e; border-radius: 3px; }
+  .slider-fill { height: 100%; border-radius: 3px; transition: width 0.15s ease, background 0.3s; }
+  .slider-thumb {
+    position: absolute; width: 18px; height: 18px; border-radius: 50%;
+    border: 3px solid #1a1a2e; transition: left 0.15s ease, background 0.3s;
+    pointer-events: none;
+  }
+  input[type="range"] { position: absolute; width: 100%; height: 32px; opacity: 0; cursor: pointer; z-index: 2; }
+  .slider-ends { display: flex; justify-content: space-between; margin-top: 2px; font-size: 10px; color: #555; }
+  .panel-empty {
+    font-size: 12px; color: #444; font-style: italic; padding: 20px 0; text-align: center;
+  }
+
+  /* Gauge */
+  .gauge-area { max-width: 480px; margin: 0 auto; padding: 0 24px 32px; }
+  .gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .zone-card {
+    border-radius: 12px; padding: 14px 20px; text-align: center;
+    max-width: 360px; width: 100%; transition: background 0.4s, border-color 0.4s;
+  }
+  .zone-card .zone-label {
+    font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+    margin-bottom: 4px; transition: color 0.4s;
+  }
+  .zone-card .zone-desc { font-size: 12.5px; color: #b0aea8; line-height: 1.5; }
+
+  /* Shannon */
+  .shannon {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 1px solid #333355; border-radius: 14px; padding: 20px; margin-top: 16px;
+  }
+  .shannon-tag {
+    font-size: 12px; font-weight: 700; color: #8888bb;
+    letter-spacing: 1.5px; margin-bottom: 12px; text-transform: uppercase;
+  }
+  .shannon-bars { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+  .shannon-bars .bar-col { flex: 1; }
+  .shannon-bars .bar-label { font-size: 10px; color: #666; margin-bottom: 4px; }
+  .shannon-bars .bar-track { height: 8px; background: #2a2a3e; border-radius: 4px; overflow: hidden; }
+  .shannon-bars .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .shannon-bars .separator { font-size: 18px; color: #555; font-family: 'Space Mono', monospace; }
+  .shannon-text { font-size: 11.5px; color: #8888aa; line-height: 1.6; font-style: italic; }
+
+  /* Warning */
+  .warning-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 16px; border-radius: 8px;
+    border: 1px solid #e74c3c44; background: rgba(231,76,60,0.08);
+    color: #e74c3c; font-size: 11px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    transition: all 0.2s; margin-bottom: 12px;
+  }
+  .warning-btn:hover { background: rgba(231,76,60,0.15); border-color: #e74c3c; }
+  .warning-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 1000;
+    justify-content: center; align-items: center; padding: 24px;
+  }
+  .warning-overlay.visible { display: flex; }
+  .warning-modal {
+    background: #1a1a2e; border: 1px solid #f39c1244;
+    border-radius: 16px; padding: 28px 32px; max-width: 480px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: modalIn 0.25s ease-out;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .warning-modal-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(243,156,18,0.12); display: flex;
+    align-items: center; justify-content: center; margin-bottom: 14px;
+  }
+  .warning-modal h3 { font-size: 16px; font-weight: 700; color: #e8e6e3; margin-bottom: 12px; }
+  .warning-modal p { font-size: 13px; color: #999; line-height: 1.65; margin-bottom: 10px; }
+  .warning-modal .close-btn {
+    margin-top: 16px; padding: 8px 24px; border-radius: 8px;
+    border: 1px solid #333355; background: #13132a;
+    color: #ccc; font-size: 12px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .warning-modal .close-btn:hover { border-color: #f39c12; color: #f39c12; }
+
+  /* All Factors tab */
+  .factors-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; padding: 16px 24px 32px;
+    max-width: 1100px; margin: 0 auto;
+  }
+  @media (max-width: 740px) { .factors-grid { grid-template-columns: 1fr; } }
+  .factors-panel {
+    background: #13132a; border: 1px solid #222244;
+    border-radius: 16px; padding: 24px;
+  }
+  .factor-item {
+    padding: 12px 0; border-bottom: 1px solid #1a1a2e;
+  }
+  .factor-item:last-child { border-bottom: none; }
+  .factor-name {
+    font-size: 13px; font-weight: 700; color: #e8e6e3; margin-bottom: 3px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .factor-dir {
+    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .factor-dir.ai { background: rgba(39,174,96,0.15); color: #27ae60; }
+  .factor-dir.human { background: rgba(231,76,60,0.15); color: #e74c3c; }
+  .factor-dir.context { background: rgba(243,156,18,0.15); color: #f39c12; }
+  .factor-desc { font-size: 11.5px; color: #777; line-height: 1.5; }
+  .factor-example { font-size: 10.5px; color: #555; margin-top: 4px; font-style: italic; }
+  .factors-intro {
+    text-align: center; padding: 16px 24px 4px; max-width: 680px; margin: 0 auto;
+    font-size: 12.5px; color: #666; line-height: 1.6;
+  }
+  .factors-intro strong { color: #e8e6e3; }
+
+  .footer {
+    text-align: center; padding: 16px; border-top: 1px solid #1a1a2e;
+    font-size: 10px; color: #444; font-family: 'Space Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-tag">AI Creator Ethics Framework</div>
+  <h1>The Tradeoff Compass</h1>
+  <p>A discussion tool for exploring when AI assistance is appropriate — rooted in Shannon information theory and the balance between token generation and human signal injection.</p>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="compass">Compass</button>
+  <button class="tab-btn" data-tab="factors">All Factors</button>
+</div>
+
+<!-- ==================== COMPASS TAB ==================== -->
+<div class="tab-content active" id="tab-compass">
+
+  <div class="presets">
+    <label for="presetSelect" style="font-size:12px;color:#888;font-weight:600;">Load Use Case:</label>
+    <select id="presetSelect" class="preset-select">
+      <option value="blank">— Custom (Reset All to 5) —</option>
+      <optgroup label="Recommendations">
+        <option value="letterGoogle">Rec Letter → Big Company</option>
+        <option value="letterPersonal">Rec Letter → Close Contact</option>
+      </optgroup>
+      <optgroup label="Education">
+        <option value="textbook">Digital Textbook</option>
+      </optgroup>
+      <optgroup label="Writing &amp; Music">
+        <option value="creativeWriting">Creative Writing</option>
+        <option value="familySongs">Make AI Songs for Family Event</option>
+      </optgroup>
+      <optgroup label="Visual Art">
+        <option value="artFun">Create Art for Personal Fun</option>
+        <option value="artShow">Create Art for an Art Show</option>
+      </optgroup>
+      <optgroup label="Making &amp; Fabrication">
+        <option value="sprinkler3d">3D Print Parts to Fix Sprinkler</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="active-factors-note" id="activeNote">
+    Showing <strong>5 key factors</strong> selected for this use case. See the <strong>All Factors</strong> tab for the full list.
+  </div>
+
+  <div class="main-grid">
+    <div class="panel" id="artifactPanel">
+      <div class="panel-tag" style="color:#3498db;">
+        <span class="bar" style="background:#3498db;"></span> Artifact Domain
+      </div>
+      <div class="panel-sub">Parameters about the output and its audience</div>
+      <div id="artifactSliders"></div>
+    </div>
+    <div class="panel" id="creatorPanel">
+      <div class="panel-tag" style="color:#9b59b6;">
+        <span class="bar" style="background:#9b59b6;"></span> Creator Domain
+      </div>
+      <div class="panel-sub">Parameters about you and your creative process</div>
+      <div id="creatorSliders"></div>
+    </div>
+  </div>
+
+  <div class="gauge-area">
+    <div style="text-align:center;">
+      <button class="warning-btn" id="warningBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Disclaimer — Tap to Read
+      </button>
+    </div>
+    <div class="gauge-wrap">
+      <svg viewBox="0 0 300 180" style="width:100%;max-width:360px;">
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#e74c3c"/>
+            <stop offset="33%" stop-color="#e74c3c"/>
+            <stop offset="40%" stop-color="#f39c12"/>
+            <stop offset="60%" stop-color="#f39c12"/>
+            <stop offset="67%" stop-color="#27ae60"/>
+            <stop offset="100%" stop-color="#27ae60"/>
+          </linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <path d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" opacity="0.3"/>
+        <path id="gaugeArc" d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="188 377" style="transition:stroke-dasharray 0.6s cubic-bezier(0.4,0,0.2,1)"/>
+        <text x="45" y="172" fill="#e74c3c" font-size="10" font-family="'DM Sans',sans-serif" font-weight="600" opacity="0.7">HUMAN-LED</text>
+        <text x="150" y="32" fill="#f39c12" font-size="10" font-family="'DM Sans',sans-serif" font-weight="600" text-anchor="middle" opacity="0.7">BALANCED</text>
+        <text x="210" y="172" fill="#27ae60" font-size="10" font-family="'DM Sans',sans-serif" font-weight="600" opacity="0.7">AI-AUGMENTED</text>
+        <g id="needleGroup" style="transition:transform 0.6s cubic-bezier(0.4,0,0.2,1)">
+          <line x1="150" y1="150" x2="150" y2="45" stroke="#f39c12" stroke-width="3" stroke-linecap="round" filter="url(#glow)" id="needleLine"/>
+          <circle cx="150" cy="150" r="8" id="needleDot" fill="#f39c12"/>
+          <circle cx="150" cy="150" r="4" fill="#1a1a2e"/>
+        </g>
+        <text id="scoreText" x="150" y="130" text-anchor="middle" fill="#e8e6e3" font-size="28" font-family="'Space Mono',monospace" font-weight="700">50</text>
+        <text x="150" y="145" text-anchor="middle" fill="#888" font-size="10" font-family="'DM Sans',sans-serif">AI SUITABILITY</text>
+      </svg>
+      <div class="zone-card" id="zoneCard">
+        <div class="zone-label" id="zoneLabel"></div>
+        <div class="zone-desc" id="zoneDesc"></div>
+      </div>
+    </div>
+    <div class="shannon">
+      <div class="shannon-tag">Shannon Information Lens</div>
+      <div class="shannon-bars">
+        <div class="bar-col">
+          <div class="bar-label">AI Token Generation (Entropy Space)</div>
+          <div class="bar-track"><div class="bar-fill" id="shannonAi" style="background:linear-gradient(90deg,#3498db,#2ecc71);width:50%;"></div></div>
+        </div>
+        <div class="separator">⇌</div>
+        <div class="bar-col">
+          <div class="bar-label">Human Refinement (Signal Injection)</div>
+          <div class="bar-track"><div class="bar-fill" id="shannonHuman" style="background:linear-gradient(90deg,#e74c3c,#f39c12);width:50%;"></div></div>
+        </div>
+      </div>
+      <div class="shannon-text" id="shannonText"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ALL FACTORS TAB ==================== -->
+<div class="tab-content" id="tab-factors">
+  <div class="factors-intro">
+    The full universe of considerations when deciding how much to lean on AI. Each use case on the <strong>Compass</strong> tab highlights the <strong>5 most relevant</strong> factors from this list — because context determines which tradeoffs matter most.
+  </div>
+  <div class="factors-grid">
+    <div class="factors-panel">
+      <div class="panel-tag" style="color:#3498db;">
+        <span class="bar" style="background:#3498db;"></span> Artifact Domain
+      </div>
+      <div class="panel-sub">Factors about the output, the audience, and the context</div>
+      <div id="factorsArtifact"></div>
+    </div>
+    <div class="factors-panel">
+      <div class="panel-tag" style="color:#9b59b6;">
+        <span class="bar" style="background:#9b59b6;"></span> Creator Domain
+      </div>
+      <div class="panel-sub">Factors about you, your growth, and your process</div>
+      <div id="factorsCreator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Warning modal -->
+<div class="warning-overlay" id="warningOverlay">
+  <div class="warning-modal">
+    <div class="warning-modal-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <h3>This Is a Thought Tool, Not a Calculator</h3>
+    <p>The slider values and composite scores shown here are <strong style="color:#e8e6e3;">directional, not prescriptive</strong>. They are meant to help you think through the tradeoffs involved in using AI for different creative tasks — not to produce a definitive answer.</p>
+    <p>The preset values assigned to each use case reflect one person's rough intuition and are intended as conversation starters. Reasonable people will disagree on where the sliders should land, and that's exactly the point.</p>
+    <p>Different use cases surface different factors — and <em>which</em> factors matter most is itself part of the discussion.</p>
+    <button class="close-btn" id="warningClose">Got it</button>
+  </div>
+</div>
+
+<div class="footer">Based on a Shannon information theory framework for AI creator ethics</div>
+
+<script>
+/* ============================================================
+   MASTER FACTOR CATALOG
+   Each factor has: id, label, desc, example, domain, direction
+   domain: "artifact" or "creator"
+   direction: "ai" (high = AI appropriate), "human" (high = human needed), "context" (situational)
+   ============================================================ */
+var ALL_FACTORS = [
+  // --- ARTIFACT DOMAIN ---
+  { id:"infoDensity", domain:"artifact", direction:"ai",
+    label:"Information Density Need",
+    desc:"How much does the output need to maximize factual signal, clarity, and completeness?",
+    example:"A technical manual needs high density; a birthday card does not.",
+    low:"Low complexity", high:"Dense & technical" },
+
+  { id:"originality", domain:"artifact", direction:"human",
+    label:"Originality Required",
+    desc:"How much must the output reflect unique, novel human thought versus standard patterns?",
+    example:"A patent application needs originality; a form letter does not.",
+    low:"Standard / templated", high:"Deeply original" },
+
+  { id:"audienceEffort", domain:"artifact", direction:"human",
+    label:"Audience Values Human Effort",
+    desc:"Does the recipient care that a human invested personal time and thought in creating this?",
+    example:"A hand-written thank-you note vs. an auto-generated receipt.",
+    low:"Indifferent to process", high:"Effort is the signal" },
+
+  { id:"recipientScale", domain:"artifact", direction:"ai",
+    label:"Recipient Scale",
+    desc:"Is this for an institution or system versus a specific person who knows you?",
+    example:"A Google job application vs. a note to your mentor.",
+    low:"Intimate / personal", high:"Institutional / formal" },
+
+  { id:"emotionalWeight", domain:"artifact", direction:"human",
+    label:"Emotional / Relational Weight",
+    desc:"Does this artifact carry deep emotional significance for the recipient or a relationship?",
+    example:"A eulogy, wedding toast, or apology letter.",
+    low:"Transactional", high:"Deeply meaningful" },
+
+  { id:"verifiability", domain:"artifact", direction:"ai",
+    label:"Verifiability of Output",
+    desc:"Can the result be objectively tested, measured, or fact-checked?",
+    example:"A 3D-printed part either fits or it doesn't. An essay's accuracy is harder to verify.",
+    low:"Hard to verify", high:"Easily tested" },
+
+  { id:"disclosureNorms", domain:"artifact", direction:"human",
+    label:"Transparency / Disclosure Norms",
+    desc:"Does this context have explicit or implicit rules about AI use that require honesty?",
+    example:"Academic submissions, journalism, legal filings, grant applications.",
+    low:"No norms exist", high:"Strict disclosure expected" },
+
+  { id:"displacement", domain:"artifact", direction:"human",
+    label:"Displaces Paid Creative Work",
+    desc:"Does using AI here take work from someone who would otherwise be paid for this skill?",
+    example:"Generating marketing art vs. commissioning a graphic designer.",
+    low:"No one loses work", high:"Directly displaces a creator" },
+
+  { id:"errorStakes", domain:"artifact", direction:"human",
+    label:"Stakes / Consequence of Error",
+    desc:"How much harm results if the AI gets something wrong in this output?",
+    example:"Medical advice vs. brainstorming vacation ideas.",
+    low:"Low-consequence", high:"Errors cause real harm" },
+
+  { id:"culturalSensitivity", domain:"artifact", direction:"human",
+    label:"Cultural Sensitivity Required",
+    desc:"Does the output touch on cultural, religious, or identity topics that require lived understanding?",
+    example:"Writing about indigenous practices vs. writing a product FAQ.",
+    low:"Culturally neutral", high:"Deep sensitivity needed" },
+
+  { id:"longevity", domain:"artifact", direction:"context",
+    label:"Longevity / Archival Importance",
+    desc:"Will this artifact persist for years or is it ephemeral?",
+    example:"A published book vs. a Slack message.",
+    low:"Ephemeral / disposable", high:"Permanent record" },
+
+  { id:"persuasiveIntent", domain:"artifact", direction:"context",
+    label:"Persuasive Intent",
+    desc:"Is this artifact designed to change someone's mind or behavior?",
+    example:"A political ad, sales pitch, or fundraising appeal.",
+    low:"Purely informational", high:"Designed to persuade" },
+
+  // --- CREATOR DOMAIN ---
+  { id:"fulfillment", domain:"creator", direction:"human",
+    label:"Creative Fulfillment Need",
+    desc:"How much satisfaction do you derive from doing this work by hand?",
+    example:"Writing poetry by hand vs. drafting a compliance report.",
+    low:"Task is a chore", high:"The craft is the joy" },
+
+  { id:"skillGrowth", domain:"creator", direction:"human",
+    label:"Skill Growth Priority",
+    desc:"Is developing your own ability in this area important to you right now?",
+    example:"A student learning to write vs. a veteran author drafting an outline.",
+    low:"Not a growth area", high:"Core skill to develop" },
+
+  { id:"empowerment", domain:"creator", direction:"ai",
+    label:"Creative Empowerment",
+    desc:"Does AI enable you to create something that simply wouldn't exist without it?",
+    example:"A non-programmer building animated educational graphics.",
+    low:"Could do it without AI", high:"AI unlocks new possibilities" },
+
+  { id:"authenticity", domain:"creator", direction:"human",
+    label:"Authenticity of Expression",
+    desc:"How important is it that the output sounds unmistakably like you?",
+    example:"A personal blog post vs. a data summary.",
+    low:"Voice doesn't matter", high:"Must be my voice" },
+
+  { id:"domainExpertise", domain:"creator", direction:"context",
+    label:"Domain Expertise Level",
+    desc:"How well can you catch AI mistakes? An expert accelerating vs. a novice faking competence.",
+    example:"A doctor reviewing AI-drafted notes vs. a layperson taking AI medical advice.",
+    low:"Novice in this area", high:"Deep domain expert" },
+
+  { id:"timePressure", domain:"creator", direction:"ai",
+    label:"Time Pressure",
+    desc:"How much does urgency legitimately shift the calculus toward speed?",
+    example:"A crisis communications response vs. a personal memoir.",
+    low:"No deadline", high:"Needed immediately" },
+
+  { id:"ethicalAlignment", domain:"creator", direction:"human",
+    label:"Ethical Alignment with Values",
+    desc:"Does your use of AI here align with your personal or professional values?",
+    example:"A teacher who values the learning process vs. efficiency-focused consultant.",
+    low:"No tension", high:"Feels ethically fraught" },
+
+  { id:"collaborativeJoy", domain:"creator", direction:"ai",
+    label:"Joy of Human-AI Collaboration",
+    desc:"Do you find the iterative process of prompting, refining, and curating genuinely satisfying?",
+    example:"Enjoying the back-and-forth of shaping AI output vs. wishing you'd just done it yourself.",
+    low:"Prefer solo creation", high:"The collaboration is fun" },
+];
+
+/* ============================================================
+   USE CASE PRESETS
+   Each preset picks 5 factor IDs + their default values
+   ============================================================ */
+var PRESETS = {
+  blank: {
+    factors: ["infoDensity","originality","audienceEffort","empowerment","authenticity"],
+    vals: { infoDensity:5, originality:5, audienceEffort:5, empowerment:5, authenticity:5 }
+  },
+  letterGoogle: {
+    factors: ["infoDensity","recipientScale","empowerment","audienceEffort","authenticity"],
+    vals: { infoDensity:7, recipientScale:9, empowerment:7, audienceEffort:2, authenticity:3 }
+  },
+  letterPersonal: {
+    factors: ["emotionalWeight","authenticity","audienceEffort","originality","fulfillment"],
+    vals: { emotionalWeight:8, authenticity:8, audienceEffort:8, originality:6, fulfillment:6 }
+  },
+  textbook: {
+    factors: ["infoDensity","empowerment","verifiability","skillGrowth","collaborativeJoy"],
+    vals: { infoDensity:9, empowerment:9, verifiability:7, skillGrowth:4, collaborativeJoy:8 }
+  },
+  creativeWriting: {
+    factors: ["originality","authenticity","fulfillment","skillGrowth","audienceEffort"],
+    vals: { originality:9, authenticity:9, fulfillment:9, skillGrowth:8, audienceEffort:8 }
+  },
+  familySongs: {
+    factors: ["empowerment","collaborativeJoy","emotionalWeight","fulfillment","displacement"],
+    vals: { empowerment:9, collaborativeJoy:8, emotionalWeight:6, fulfillment:8, displacement:2 }
+  },
+  artFun: {
+    factors: ["empowerment","collaborativeJoy","fulfillment","skillGrowth","audienceEffort"],
+    vals: { empowerment:9, collaborativeJoy:8, fulfillment:8, skillGrowth:3, audienceEffort:1 }
+  },
+  artShow: {
+    factors: ["originality","audienceEffort","authenticity","displacement","disclosureNorms"],
+    vals: { originality:9, audienceEffort:9, authenticity:9, displacement:7, disclosureNorms:7 }
+  },
+  sprinkler3d: {
+    factors: ["verifiability","empowerment","infoDensity","timePressure","fulfillment"],
+    vals: { verifiability:9, empowerment:9, infoDensity:8, timePressure:6, fulfillment:6 }
+  },
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var values = {};
+var activeFactorIds = [];
+var factorMap = {};
+ALL_FACTORS.forEach(function(f) { factorMap[f.id] = f; });
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function sliderColor(factor, val) {
+  if (factor.direction === "ai") return val > 6 ? "#27ae60" : val > 3 ? "#f39c12" : "#e74c3c";
+  if (factor.direction === "human") return val > 6 ? "#e74c3c" : val > 3 ? "#f39c12" : "#27ae60";
+  return "#f39c12"; // context
+}
+
+function zoneInfo(s) {
+  if (s < 33) return { zone:"Human-Led", color:"#e74c3c", bg:"rgba(231,76,60,0.12)", desc:"This scenario calls for primarily human effort. AI may hinder authenticity or value." };
+  if (s < 66) return { zone:"Balanced Partnership", color:"#f39c12", bg:"rgba(243,156,18,0.12)", desc:"AI as a thoughtful collaborator. Use it for efficiency, but inject your judgment and voice." };
+  return { zone:"AI-Augmented", color:"#27ae60", bg:"rgba(39,174,96,0.12)", desc:"Strong case for AI assistance. Your expertise guides the process; AI amplifies output quality." };
+}
+
+/* ============================================================
+   BUILD DYNAMIC SLIDERS
+   ============================================================ */
+function buildSliders() {
+  var artContainer = document.getElementById("artifactSliders");
+  var creContainer = document.getElementById("creatorSliders");
+  artContainer.innerHTML = "";
+  creContainer.innerHTML = "";
+  var artCount = 0, creCount = 0;
+
+  activeFactorIds.forEach(function(fid) {
+    var f = factorMap[fid];
+    if (!f) return;
+    var container = f.domain === "artifact" ? artContainer : creContainer;
+    if (f.domain === "artifact") artCount++; else creCount++;
+
+    var group = document.createElement("div");
+    group.className = "slider-group";
+    group.innerHTML =
+      '<div class="slider-header">' +
+        '<span class="slider-label">' + f.label + '</span>' +
+        '<span class="slider-value" id="val-' + f.id + '">5</span>' +
+      '</div>' +
+      '<div class="slider-desc">' + f.desc + '</div>' +
+      '<div class="slider-wrap">' +
+        '<div class="slider-track"><div class="slider-fill" id="fill-' + f.id + '"></div></div>' +
+        '<input type="range" min="0" max="10" value="5" id="input-' + f.id + '">' +
+        '<div class="slider-thumb" id="thumb-' + f.id + '"></div>' +
+      '</div>' +
+      '<div class="slider-ends"><span>' + (f.low || "Low") + '</span><span>' + (f.high || "High") + '</span></div>';
+    container.appendChild(group);
+
+    (function(factor) {
+      document.getElementById("input-" + factor.id).addEventListener("input", function() {
+        values[factor.id] = parseInt(this.value);
+        document.getElementById("presetSelect").value = "";
+        updateSliderVisual(factor);
+        updateGauge();
+        updateShannon();
+      });
+    })(f);
+  });
+
+  if (artCount === 0) artContainer.innerHTML = '<div class="panel-empty">No artifact factors selected for this use case</div>';
+  if (creCount === 0) creContainer.innerHTML = '<div class="panel-empty">No creator factors selected for this use case</div>';
+}
+
+function updateSliderVisual(factor) {
+  var el = document.getElementById("val-" + factor.id);
+  if (!el) return;
+  var v = values[factor.id] || 5;
+  var pct = (v / 10) * 100;
+  var c = sliderColor(factor, v);
+  el.textContent = v;
+  el.style.color = c;
+  document.getElementById("fill-" + factor.id).style.width = pct + "%";
+  document.getElementById("fill-" + factor.id).style.background = c;
+  document.getElementById("fill-" + factor.id).style.boxShadow = "0 0 8px " + c + "44";
+  document.getElementById("thumb-" + factor.id).style.left = "calc(" + pct + "% - 9px)";
+  document.getElementById("thumb-" + factor.id).style.background = c;
+  document.getElementById("thumb-" + factor.id).style.boxShadow = "0 0 10px " + c + "66";
+  document.getElementById("input-" + factor.id).value = v;
+}
+
+/* ============================================================
+   LOAD PRESET
+   ============================================================ */
+function loadPreset(key) {
+  var preset = PRESETS[key];
+  if (!preset) return;
+  activeFactorIds = preset.factors.slice();
+  values = {};
+  for (var k in preset.vals) values[k] = preset.vals[k];
+  buildSliders();
+  activeFactorIds.forEach(function(fid) {
+    if (factorMap[fid]) updateSliderVisual(factorMap[fid]);
+  });
+  updateGauge();
+  updateShannon();
+}
+
+document.getElementById("presetSelect").addEventListener("change", function() {
+  if (this.value) loadPreset(this.value);
+});
+
+/* ============================================================
+   GAUGE
+   ============================================================ */
+function computeScore() {
+  var aiSum = 0, aiN = 0, hSum = 0, hN = 0;
+  activeFactorIds.forEach(function(fid) {
+    var f = factorMap[fid];
+    if (!f) return;
+    var v = values[fid] || 5;
+    if (f.direction === "ai") { aiSum += v; aiN++; }
+    else if (f.direction === "human") { hSum += v; hN++; }
+    // context factors don't push either way
+  });
+  if (aiN === 0 && hN === 0) return 50;
+  var aiAvg = aiN > 0 ? aiSum / aiN : 5;
+  var hAvg = hN > 0 ? hSum / hN : 5;
+  var raw = ((aiAvg - hAvg + 10) / 20) * 100;
+  return Math.max(0, Math.min(100, raw));
+}
+
+function updateGauge() {
+  var score = computeScore();
+  var info = zoneInfo(score);
+  var angle = -90 + (score / 100) * 180;
+  document.getElementById("gaugeArc").setAttribute("stroke-dasharray", (score / 100 * 377) + " 377");
+  document.getElementById("needleGroup").setAttribute("transform", "rotate(" + angle + ", 150, 150)");
+  document.getElementById("needleLine").setAttribute("stroke", info.color);
+  document.getElementById("needleDot").setAttribute("fill", info.color);
+  document.getElementById("scoreText").textContent = Math.round(score);
+  document.getElementById("zoneCard").style.background = info.bg;
+  document.getElementById("zoneCard").style.border = "1px solid " + info.color + "33";
+  document.getElementById("zoneLabel").textContent = info.zone;
+  document.getElementById("zoneLabel").style.color = info.color;
+  document.getElementById("zoneDesc").textContent = info.desc;
+}
+
+/* ============================================================
+   SHANNON
+   ============================================================ */
+function updateShannon() {
+  var aiParams = activeFactorIds.filter(function(fid) { return factorMap[fid] && factorMap[fid].direction === "ai"; });
+  var hParams  = activeFactorIds.filter(function(fid) { return factorMap[fid] && factorMap[fid].direction === "human"; });
+  var avgAi = aiParams.length > 0 ? aiParams.reduce(function(s,fid) { return s + (values[fid]||5); }, 0) / aiParams.length : 5;
+  var avgH  = hParams.length > 0 ? hParams.reduce(function(s,fid) { return s + (values[fid]||5); }, 0) / hParams.length : 5;
+
+  document.getElementById("shannonAi").style.width = (avgAi * 10) + "%";
+  document.getElementById("shannonHuman").style.width = (avgH * 10) + "%";
+
+  var ratio = avgAi / Math.max(avgAi + avgH, 1);
+  var txt;
+  if (ratio > 0.55) txt = "AI efficiently explores the token space; your expertise shapes the signal. High information density achieved through human-guided generation.";
+  else if (ratio < 0.45) txt = "The human element carries the signal here. Authenticity, voice, and personal effort are the primary information carriers in this scenario.";
+  else txt = "A balanced exchange: AI provides the raw probability space, while human judgment selectively injects meaning into the final artifact.";
+  document.getElementById("shannonText").textContent = txt;
+}
+
+/* ============================================================
+   BUILD ALL FACTORS REFERENCE TAB
+   ============================================================ */
+function buildFactorsTab() {
+  var artContainer = document.getElementById("factorsArtifact");
+  var creContainer = document.getElementById("factorsCreator");
+
+  ALL_FACTORS.forEach(function(f) {
+    var container = f.domain === "artifact" ? artContainer : creContainer;
+    var dirLabel = f.direction === "ai" ? "Favors AI" : f.direction === "human" ? "Favors Human" : "Contextual";
+    var dirClass = f.direction;
+    var item = document.createElement("div");
+    item.className = "factor-item";
+    item.innerHTML =
+      '<div class="factor-name">' + f.label +
+        ' <span class="factor-dir ' + dirClass + '">' + dirLabel + '</span>' +
+      '</div>' +
+      '<div class="factor-desc">' + f.desc + '</div>' +
+      '<div class="factor-example">e.g. ' + f.example + '</div>';
+    container.appendChild(item);
+  });
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+var tabBtns = document.querySelectorAll(".tab-btn");
+for (var i = 0; i < tabBtns.length; i++) {
+  (function(btn) {
+    btn.addEventListener("click", function() {
+      for (var j = 0; j < tabBtns.length; j++) tabBtns[j].classList.remove("active");
+      btn.classList.add("active");
+      document.getElementById("tab-compass").classList.remove("active");
+      document.getElementById("tab-factors").classList.remove("active");
+      document.getElementById("tab-" + btn.getAttribute("data-tab")).classList.add("active");
+    });
+  })(tabBtns[i]);
+}
+
+/* ============================================================
+   WARNING MODAL
+   ============================================================ */
+document.getElementById("warningBtn").addEventListener("click", function() {
+  document.getElementById("warningOverlay").classList.add("visible");
+});
+document.getElementById("warningClose").addEventListener("click", function() {
+  document.getElementById("warningOverlay").classList.remove("visible");
+});
+document.getElementById("warningOverlay").addEventListener("click", function(e) {
+  if (e.target === this) this.classList.remove("visible");
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildFactorsTab();
+loadPreset("blank");
+</script>
+</body>
+</html>
