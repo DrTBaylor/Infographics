@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waco Grounds Intelligence Platform</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f1f5f9; }
+    #root { height:100vh; }
+    select,textarea,button,input { font-family:inherit; }
+    @keyframes pulse { 0%,100%{ r:5; opacity:.5 } 50%{ r:13; opacity:0 } }
+    .dot-pulse { animation: pulse 2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+
+<script type="text/babel">
+const { useState } = React;
+const { BarChart,Bar,LineChart,Line,XAxis,YAxis,Tooltip,ResponsiveContainer,AreaChart,Area,Cell,PieChart,Pie } = Recharts;
+
+// ═══════════════════════════════════════════════
+// SVG ICONS
+// ═══════════════════════════════════════════════
+const Sv = ({size=18,color="currentColor",children,style})=>(<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>{children}</svg>);
+const Clock=(p)=><Sv {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Sv>;
+const Users=(p)=><Sv {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Sv>;
+const Wrench=(p)=><Sv {...p}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></Sv>;
+const Lightbulb=(p)=><Sv {...p}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></Sv>;
+const MapIcon=(p)=><Sv {...p}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></Sv>;
+const Leaf=(p)=><Sv {...p}><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 20 .5 20 .5s-1.5 8.2-6.5 12"/><path d="M10.7 14a15 15 0 0 0-3.3 5.6"/></Sv>;
+const Trophy=(p)=><Sv {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></Sv>;
+const BarChart3=(p)=><Sv {...p}><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></Sv>;
+const Camera=(p)=><Sv {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></Sv>;
+const ArrowUpRight=(p)=><Sv {...p}><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></Sv>;
+const ArrowDownRight=(p)=><Sv {...p}><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></Sv>;
+
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const G="#22c55e",Y="#eab308",R="#ef4444",B="#3b82f6";
+const SC={green:G,yellow:Y,red:R};
+const TH={slow:[12,20],medium:[7,14],fast:[4,8]};
+
+// Equipment lookup
+const EQ={rm:"Riding Mower",pm:"Push Mower",st:"String Trimmer",ed:"Edger",bl:"Blower",ht:"Hedge Trimmer",cs:"Chain Saw",sp:"Sprayer",pw:"Pressure Washer",rk:"Rake"};
+const EQIcon={rm:"\uD83D\uDE9C",pm:"\uD83C\uDF3F",st:"\u2702\uFE0F",ed:"\uD83D\uDEE0\uFE0F",bl:"\uD83D\uDCA8",ht:"\u2702\uFE0F",cs:"\uD83E\uDE93",sp:"\uD83D\uDCA6",pw:"\uD83D\uDEB0",rk:"\uD83C\uDF42"};
+
+const sites=[
+  {id:1, name:"Lake Waco Wetlands",     type:"park",     x:145,y:52,  ds:3,  rate:"slow",  crew:"Alpha",  eq:["rm","st","bl","sp"]},
+  {id:2, name:"Mountainview Park",       type:"park",     x:170,y:95,  ds:4,  rate:"slow",  crew:"Alpha",  eq:["rm","st","ed","bl"]},
+  {id:3, name:"Airport Park",            type:"park",     x:120,y:115, ds:1,  rate:"medium",crew:"Alpha",  eq:["rm","st","ed","bl","ht"]},
+  {id:4, name:"Fred Cox Park",           type:"park",     x:340,y:75,  ds:3,  rate:"medium",crew:"Bravo",  eq:["rm","st","ed","bl"]},
+  {id:5, name:"Proctor Springs",         type:"park",     x:245,y:100, ds:5,  rate:"medium",crew:"Alpha",  eq:["rm","st","ed","bl","sp"]},
+  {id:6, name:"Bosque Blvd Median",      type:"median",   x:205,y:135, ds:2,  rate:"slow",  crew:"Alpha",  eq:["pm","st","ed","bl"]},
+  {id:7, name:"18th St Corridor",        type:"median",   x:295,y:120, ds:7,  rate:"medium",crew:"Bravo",  eq:["pm","st","ed","bl"]},
+  {id:8, name:"Cameron Park – Entrance",type:"park", x:148,y:185, ds:1,  rate:"medium",crew:"Echo",   eq:["rm","st","ed","bl","ht"]},
+  {id:9, name:"Cameron Park – Trails",  type:"park", x:125,y:218, ds:5,  rate:"fast",  crew:"Echo",   eq:["st","bl","cs","rk"]},
+  {id:10,name:"Cameron Park – Disc Golf",type:"park",x:108,y:255, ds:2,  rate:"slow",  crew:"Echo",   eq:["rm","st","bl"]},
+  {id:11,name:"Fire Station #7",         type:"facility", x:178,y:148, ds:3,  rate:"slow",  crew:"Alpha",  eq:["pm","st","ed","bl","ht"]},
+  {id:12,name:"Heritage Square",         type:"park",     x:285,y:198, ds:2,  rate:"slow",  crew:"Bravo",  eq:["pm","st","ed","bl","ht"]},
+  {id:13,name:"Touchdown Alley",         type:"park",     x:278,y:168, ds:1,  rate:"medium",crew:"Bravo",  eq:["rm","st","ed","bl"]},
+  {id:14,name:"Indian Spring Park",      type:"park",     x:258,y:232, ds:14, rate:"fast",  crew:"Charlie",eq:["rm","st","ed","bl","sp"]},
+  {id:15,name:"City Hall Grounds",       type:"facility", x:292,y:218, ds:1,  rate:"slow",  crew:"Bravo",  eq:["pm","st","ed","bl","ht"]},
+  {id:16,name:"Library Grounds",         type:"facility", x:268,y:202, ds:2,  rate:"slow",  crew:"Bravo",  eq:["pm","st","ed","bl","ht"]},
+  {id:17,name:"Brazos Park East",        type:"park",     x:312,y:188, ds:1,  rate:"medium",crew:"Bravo",  eq:["rm","st","ed","bl"]},
+  {id:18,name:"Riverwalk Park",          type:"park",     x:252,y:258, ds:8,  rate:"medium",crew:"Charlie",eq:["rm","st","ed","bl","sp","pw"]},
+  {id:19,name:"Franklin Ave Median",     type:"median",   x:312,y:228, ds:1,  rate:"slow",  crew:"Bravo",  eq:["pm","st","ed","bl"]},
+  {id:20,name:"Convention Center",       type:"facility", x:302,y:205, ds:2,  rate:"slow",  crew:"Bravo",  eq:["pm","st","ed","bl","ht","pw"]},
+  {id:21,name:"Bledsoe-Miller Park",     type:"park",     x:405,y:212, ds:12, rate:"fast",  crew:"Charlie",eq:["rm","st","ed","bl","cs"]},
+  {id:22,name:"Oscar DuConge Park",      type:"park",     x:435,y:252, ds:10, rate:"fast",  crew:"Charlie",eq:["rm","st","ed","bl"]},
+  {id:23,name:"MLK Blvd Median",         type:"median",   x:388,y:238, ds:6,  rate:"medium",crew:"Charlie",eq:["pm","st","ed","bl"]},
+  {id:24,name:"Waco Dr Median",          type:"median",   x:368,y:178, ds:2,  rate:"slow",  crew:"Bravo",  eq:["pm","st","ed","bl"]},
+  {id:25,name:"Community Center East",   type:"facility", x:445,y:198, ds:13, rate:"fast",  crew:"Charlie",eq:["pm","st","ed","bl","ht"]},
+  {id:26,name:"Elm Ave Corridor",        type:"median",   x:335,y:258, ds:15, rate:"fast",  crew:"Charlie",eq:["pm","st","ed","bl"]},
+  {id:27,name:"Lions Park",              type:"park",     x:288,y:332, ds:2,  rate:"slow",  crew:"Delta",  eq:["rm","st","ed","bl"]},
+  {id:28,name:"Sul Ross Park",           type:"park",     x:318,y:362, ds:8,  rate:"fast",  crew:"Delta",  eq:["rm","st","ed","bl","ht"]},
+  {id:29,name:"Dewey Park",              type:"park",     x:248,y:372, ds:6,  rate:"medium",crew:"Delta",  eq:["rm","st","ed","bl"]},
+  {id:30,name:"Kendrick Park",           type:"park",     x:358,y:292, ds:5,  rate:"medium",crew:"Delta",  eq:["rm","st","ed","bl","sp"]},
+  {id:31,name:"Valley Mills Dr Median",  type:"median",   x:188,y:298, ds:9,  rate:"fast",  crew:"Echo",   eq:["pm","st","ed","bl"]},
+  {id:32,name:"Lake Air Dr Median",      type:"median",   x:195,y:335, ds:11, rate:"fast",  crew:"Echo",   eq:["pm","st","ed","bl"]},
+  {id:33,name:"Fire Station #3",         type:"facility", x:378,y:312, ds:4,  rate:"medium",crew:"Delta",  eq:["pm","st","ed","bl","ht"]},
+  {id:34,name:"South Loop ROW",          type:"median",   x:342,y:398, ds:7,  rate:"fast",  crew:"Delta",  eq:["rm","st","bl","cs"]},
+  {id:35,name:"Woodway Park",            type:"park",     x:115,y:332, ds:2,  rate:"medium",crew:"Echo",   eq:["rm","st","ed","bl","ht"]},
+];
+
+// Derive status from growth model
+sites.forEach(s=>{
+  const[yt,rt]=TH[s.rate];
+  s.status = s.ds>=rt?"red" : s.ds>=yt?"yellow" : "green";
+  s.daysToYellow = Math.max(0,yt-s.ds);
+  s.daysToRed = Math.max(0,rt-s.ds);
+});
+
+const crewRoutes=[
+  {name:"Alpha",  color:"#0f766e", lead:"Marcus Johnson", size:4, route:[1,2,3,11,6,5]},
+  {name:"Bravo",  color:B,         lead:"Sarah Chen",     size:5, route:[4,7,24,17,13,12,16,15,20,19]},
+  {name:"Charlie",color:R,         lead:"David Reyes",    size:3, route:[25,21,22,23,26,14,18]},
+  {name:"Delta",  color:"#8b5cf6", lead:"James Walker",   size:3, route:[33,30,28,27,29,34]},
+  {name:"Echo",   color:Y,         lead:"Maria Santos",   size:4, route:[8,9,10,35,31,32]},
+];
+
+const alphaLog=[
+  {siteId:1, arrived:"7:02 AM", confirmed:"green", predicted:"green", done:"7:28 AM", travel:null, maint:26},
+  {siteId:2, arrived:"7:36 AM", confirmed:"green", predicted:"green", done:"7:58 AM", travel:8,    maint:22},
+  {siteId:3, arrived:"8:10 AM", confirmed:"green", predicted:"green", done:"8:28 AM", travel:12,   maint:18},
+  {siteId:11,arrived:"8:35 AM", confirmed:null,    predicted:"green", done:null,       travel:7,    maint:null},
+];
+
+const trendData=[
+  {mo:"Sep",red:34,util:61,equip:72,ideas:0,  accuracy:0},
+  {mo:"Oct",red:29,util:65,equip:74,ideas:12, accuracy:72},
+  {mo:"Nov",red:24,util:70,equip:78,ideas:18, accuracy:79},
+  {mo:"Dec",red:22,util:73,equip:80,ideas:15, accuracy:83},
+  {mo:"Jan",red:20,util:76,equip:82,ideas:22, accuracy:86},
+  {mo:"Feb",red:18,util:78,equip:84,ideas:23, accuracy:89},
+];
+
+const equipData=[
+  {name:"Mowers",active:12,total:15},{name:"Trimmers",active:18,total:20},
+  {name:"Blowers",active:14,total:16},{name:"Trucks",active:8,total:10},{name:"Sprayers",active:4,total:5},
+];
+
+const weekPts=[
+  {w:"Wk 1",Alpha:680,Bravo:620,Charlie:590,Delta:540,Echo:480},
+  {w:"Wk 2",Alpha:710,Bravo:650,Charlie:610,Delta:555,Echo:510},
+  {w:"Wk 3",Alpha:725,Bravo:670,Charlie:640,Delta:560,Echo:520},
+  {w:"Wk 4",Alpha:725,Bravo:675,Charlie:640,Delta:555,Echo:540},
+];
+
+const badges=[
+  {name:"Red Crusher",icon:"\uD83C\uDFAF",desc:"Cleared 5+ red sites",holders:["Charlie","Bravo"]},
+  {name:"Eagle Eye",icon:"\uD83D\uDC41\uFE0F",desc:"Most observations / month",holders:["Bravo"]},
+  {name:"Streak Master",icon:"\uD83D\uDD25",desc:"7+ day all-green streak",holders:["Alpha","Bravo"]},
+  {name:"Model Trainer",icon:"\uD83E\uDDE0",desc:"50+ growth confirmations",holders:["Alpha","Bravo","Delta"]},
+  {name:"Iron Horse",icon:"\uD83D\uDE9C",desc:"95%+ equipment uptime",holders:["Alpha"]},
+];
+
+const crews=[
+  {id:1,name:"Alpha Crew",lead:"Marcus Johnson",size:4,pts:2840,streak:12,delta:0,ideas:8,cleared:3,eff:94,zone:"NW"},
+  {id:2,name:"Bravo Crew",lead:"Sarah Chen",size:5,pts:2615,streak:7,delta:1,ideas:12,cleared:5,eff:88,zone:"Central"},
+  {id:3,name:"Charlie Crew",lead:"David Reyes",size:3,pts:2480,streak:3,delta:-1,ideas:6,cleared:7,eff:76,zone:"East"},
+  {id:4,name:"Delta Crew",lead:"James Walker",size:3,pts:2210,streak:5,delta:1,ideas:9,cleared:2,eff:82,zone:"South"},
+  {id:5,name:"Echo Crew",lead:"Maria Santos",size:4,pts:2050,streak:2,delta:-1,ideas:4,cleared:4,eff:71,zone:"West"},
+];
+
+// ═══════════════════════════════════════════════
+// SHARED UI
+// ═══════════════════════════════════════════════
+const Card=({children,style,...p})=>(<div style={{background:"#fff",borderRadius:12,padding:20,boxShadow:"0 1px 3px rgba(0,0,0,.08)",border:"1px solid #f1f5f9",...style}} {...p}>{children}</div>);
+const Pill=({status})=>{const s={green:{bg:"#dcfce7",fg:"#166534",t:"Good"},yellow:{bg:"#fef9c3",fg:"#854d0e",t:"Fair"},red:{bg:"#fee2e2",fg:"#991b1b",t:"Needs Work"}};const c=s[status];return <span style={{background:c.bg,color:c.fg,padding:"2px 10px",borderRadius:999,fontSize:11,fontWeight:600}}>{c.t}</span>};
+const Metric=({title,value,sub,icon:Icon,color,good})=>(<Card><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><span style={{fontSize:13,color:"#64748b",fontWeight:500}}>{title}</span><div style={{padding:8,borderRadius:10,background:color+"18"}}><Icon size={17} color={color}/></div></div><div style={{fontSize:26,fontWeight:700,color:"#0f172a",marginBottom:4}}>{value}</div><div style={{display:"flex",alignItems:"center",gap:3}}>{good?<ArrowUpRight size={13} color={G}/>:<ArrowDownRight size={13} color={G}/>}<span style={{fontSize:11,color:G,fontWeight:600}}>{sub}</span></div></Card>);
+const TypeIcon=({type})=>{const m={park:"\uD83C\uDFDE\uFE0F",median:"\uD83D\uDEE3\uFE0F",facility:"\uD83C\uDFDB\uFE0F"};return <span style={{fontSize:14}}>{m[type]||""}</span>};
+
+// ═══════════════════════════════════════════════
+// DOT MAP
+// ═══════════════════════════════════════════════
+const DotMap=({selected,onSelect,showCrew,onHover,hovered,buildMode,buildRoute,buildColor,onBuildTap})=>{
+  const getSite=id=>sites.find(s=>s.id===id);
+  const buildSet=new Set(buildRoute||[]);
+  return(
+  <svg viewBox="0 0 560 440" style={{width:"100%",height:"100%",borderRadius:12}}>
+    <rect x={0} y={0} width={560} height={440} rx={12} fill={buildMode?"#f5f0ff":"#f0f4f8"}/>
+    {/* City boundary */}
+    <path d="M 90,28 L 240,18 L 380,22 L 470,55 L 500,145 L 492,248 L 470,348 L 435,415 L 345,435 L 245,430 L 148,420 L 78,375 L 52,295 L 58,198 L 68,118 Z"
+          fill="#f8fafc" stroke="#e2e8f0" strokeWidth={1.5} opacity={.8}/>
+    {/* Lake Waco */}
+    <ellipse cx={140} cy={45} rx={52} ry={20} fill="#bfdbfe" opacity={.4}/>
+    <text x={118} y={48} fontSize={7} fill="#7cacde" opacity={.8}>Lake Waco</text>
+    {/* Brazos River */}
+    <path d="M 268,5 C 258,65 282,125 255,195 C 232,260 270,330 248,435"
+          stroke="#93c5fd" strokeWidth={8} fill="none" opacity={.4} strokeLinecap="round"/>
+    <text x={262} y={118} fontSize={8} fill="#93c5fd" fontStyle="italic" opacity={.6}>Brazos</text>
+    {/* I-35 */}
+    <line x1={278} y1={0} x2={278} y2={440} stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="5,3" opacity={.4}/>
+    <text x={281} y={12} fontSize={7} fill="#94a3b8" opacity={.6}>I-35</text>
+    {/* Build-mode route line */}
+    {buildMode&&buildRoute.length>1&&(()=>{
+      const pts=buildRoute.map(id=>getSite(id)).filter(Boolean);
+      return(<polyline points={pts.map(p=>`${p.x},${p.y}`).join(" ")}
+                fill="none" stroke={buildColor||"#8b5cf6"} strokeWidth={3} strokeDasharray="6,4" opacity={.6}/>);
+    })()}
+    {/* Build-mode stop numbers */}
+    {buildMode&&buildRoute.map((id,i)=>{
+      const s=getSite(id);if(!s)return null;
+      return(<g key={"bn"+id}>
+        <circle cx={s.x} cy={s.y} r={11} fill={buildColor||"#8b5cf6"} opacity={.18}/>
+        <text x={s.x} y={s.y+3.5} textAnchor="middle" fontSize={8} fontWeight={700} fill={buildColor||"#8b5cf6"}>{i+1}</text>
+      </g>);
+    })}
+    {/* Route lines (existing routes - dimmed in build mode) */}
+    {!buildMode && showCrew && crewRoutes.filter(r=>r.name===showCrew).map(r=>{
+      const pts=r.route.map(id=>getSite(id)).filter(Boolean);
+      return(<g key={r.name}>
+        <polyline points={pts.map(p=>`${p.x},${p.y}`).join(" ")}
+                  fill="none" stroke={r.color} strokeWidth={2.5} strokeDasharray="8,4" opacity={.5}/>
+        {pts.map((p,i)=>(
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r={10} fill={r.color} opacity={.15}/>
+            <text x={p.x} y={p.y+3.5} textAnchor="middle" fontSize={8} fontWeight={700} fill={r.color}>{i+1}</text>
+          </g>
+        ))}
+      </g>);
+    })}
+    {/* Site dots */}
+    {sites.map(s=>{
+      const sel=selected===s.id;
+      const hov=hovered===s.id;
+      const inBuild=buildSet.has(s.id);
+      const r=sel?9:hov?7:inBuild?7:5;
+      const handleClick=()=>buildMode?onBuildTap(s.id):onSelect(sel?null:s.id);
+      return(<g key={s.id} onClick={handleClick}
+               onMouseEnter={()=>onHover(s.id)} onMouseLeave={()=>onHover(null)} style={{cursor:buildMode?"crosshair":"pointer"}}>
+        {s.status==="red"&&!buildMode&&<circle cx={s.x} cy={s.y} r={5} fill="none" stroke={R} strokeWidth={1} className="dot-pulse"/>}
+        <circle cx={s.x} cy={s.y} r={r} fill={inBuild?(buildColor||"#8b5cf6"):SC[s.status]} opacity={sel?.95:inBuild?1:.8}
+                stroke={inBuild?(buildColor||"#8b5cf6"):sel?"#0f172a":hov?"#475569":"#fff"} strokeWidth={sel?2.5:inBuild?2.5:hov?2:1.2}/>
+        {(sel||hov)&&<text x={s.x} y={s.y-12} textAnchor="middle" fontSize={8} fontWeight={600}
+                           fill="#1e293b" style={{pointerEvents:"none"}}>{s.name}</text>}
+      </g>);
+    })}
+    {/* Legend */}
+    <g transform="translate(140,415)">
+      {[["Good","green",0],["Fair","yellow",70],["Needs Work","red",130]].map(([l,st,ox])=>(
+        <g key={st}><circle cx={ox} cy={0} r={4} fill={SC[st]} opacity={.7}/>
+        <text x={ox+8} y={3} fontSize={9} fill="#64748b">{l}</text></g>
+      ))}
+      <circle cx={230} cy={0} r={4} fill="none" stroke={R} strokeWidth={1} opacity={.5}/>
+      <text x={238} y={3} fontSize={9} fill="#64748b">Pulsing = overdue</text>
+    </g>
+  </svg>
+)};
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+const Dashboard=()=>{
+  const [sel,setSel]=useState(null);
+  const [showCrew,setShowCrew]=useState(null);
+  const [hov,setHov]=useState(null);
+  // Route builder state
+  const [buildMode,setBuildMode]=useState(false);
+  const [buildCrew,setBuildCrew]=useState("Alpha");
+  const [customRoute,setCustomRoute]=useState([]);
+
+  const site=sel?sites.find(s=>s.id===sel):null;
+  const greenCt=sites.filter(s=>s.status==="green").length;
+  const yellowCt=sites.filter(s=>s.status==="yellow").length;
+  const redCt=sites.filter(s=>s.status==="red").length;
+  const approaching=sites.filter(s=>s.status==="green"&&s.daysToYellow<=3).sort((a,b)=>a.daysToYellow-b.daysToYellow);
+  const critical=sites.filter(s=>s.status==="yellow"&&s.daysToRed<=3).sort((a,b)=>a.daysToRed-b.daysToRed);
+
+  const buildCrewObj=crewRoutes.find(r=>r.name===buildCrew);
+  const buildColor=buildCrewObj?buildCrewObj.color:"#8b5cf6";
+
+  const onBuildTap=(id)=>{
+    if(customRoute.includes(id)){setCustomRoute(customRoute.filter(x=>x!==id));}
+    else{setCustomRoute([...customRoute,id]);}
+  };
+
+  const startBuild=(crewName)=>{setBuildMode(true);setBuildCrew(crewName);const cr=crewRoutes.find(r=>r.name===crewName);setCustomRoute(cr?[...cr.route]:[]);setSel(null);};
+  const cancelBuild=()=>{setBuildMode(false);setCustomRoute([]);};
+  const saveBuild=()=>{const cr=crewRoutes.find(r=>r.name===buildCrew);if(cr)cr.route=[...customRoute];setBuildMode(false);setCustomRoute([]);};
+  const moveStop=(idx,dir)=>{const nr=[...customRoute];const ni=idx+dir;if(ni<0||ni>=nr.length)return;[nr[idx],nr[ni]]=[nr[ni],nr[idx]];setCustomRoute(nr);};
+
+  // Equipment aggregation for route builder
+  const routeEquipAgg=()=>{
+    const counts={};
+    customRoute.forEach(id=>{const s=sites.find(x=>x.id===id);if(s)s.eq.forEach(e=>{counts[e]=(counts[e]||0)+1;});});
+    return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  };
+
+  const showRightPanel=site||buildMode;
+
+  return(<div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:20}}>
+      <Metric title="Sites in Red" value={redCt+"/"+sites.length} sub={"↓ from 14 in Sep"} icon={Clock} color={R} good={false}/>
+      <Metric title="Crew Utilization" value="78%" sub={"↑ 17pts since launch"} icon={Users} color={B} good={true}/>
+      <Metric title="Model Accuracy" value="89%" sub={"↑ from 72% in Oct"} icon={Lightbulb} color="#8b5cf6" good={true}/>
+      <Metric title="Avg Travel Time" value="9.2 min" sub={"↓ from 14 min in Sep"} icon={Wrench} color="#0f766e" good={false}/>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:showRightPanel?"3fr 2fr":"1fr",gap:16,marginBottom:20}}>
+      <Card style={{padding:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,padding:"0 8px"}}>
+          <div>
+            <span style={{fontWeight:600,color:"#0f172a"}}>{buildMode?"Route Builder":"Site Map"} </span>
+            {buildMode?<span style={{fontSize:11,color:"#8b5cf6"}}>Tap dots to add/remove from {buildCrew} route</span>
+              :<span style={{fontSize:11,color:"#94a3b8"}}>{sites.length} sites · {greenCt} green · {yellowCt} yellow · {redCt} red</span>}
+          </div>
+          {!buildMode&&<span style={{fontSize:11,color:"#94a3b8"}}>Click dot for details</span>}
+        </div>
+        {/* Crew route filter / build button */}
+        <div style={{display:"flex",gap:6,padding:"0 8px",marginBottom:8,alignItems:"center"}}>
+          {!buildMode&&(<>
+            <span style={{fontSize:11,color:"#64748b",lineHeight:"24px"}}>Routes:</span>
+            {crewRoutes.map(r=>(<span key={r.name} onClick={()=>setShowCrew(showCrew===r.name?null:r.name)}
+              style={{padding:"3px 10px",borderRadius:99,fontSize:10,fontWeight:600,cursor:"pointer",
+                background:showCrew===r.name?r.color:"#f1f5f9",color:showCrew===r.name?"#fff":"#475569",
+                border:showCrew===r.name?"none":"1px solid #e2e8f0"}}>{r.name}</span>))}
+            <div style={{flex:1}}/>
+            <span onClick={()=>startBuild("Alpha")} style={{padding:"4px 12px",borderRadius:99,fontSize:10,fontWeight:700,cursor:"pointer",
+              background:"#8b5cf6",color:"#fff"}}>{"\uD83D\uDEE3\uFE0F"} Build Route</span>
+          </>)}
+          {buildMode&&(<>
+            <span style={{fontSize:11,color:"#64748b",lineHeight:"24px"}}>Crew:</span>
+            {crewRoutes.map(r=>(<span key={r.name} onClick={()=>{setBuildCrew(r.name);const cr=crewRoutes.find(x=>x.name===r.name);setCustomRoute(cr?[...cr.route]:[]);}}
+              style={{padding:"3px 10px",borderRadius:99,fontSize:10,fontWeight:600,cursor:"pointer",
+                background:buildCrew===r.name?r.color:"#f1f5f9",color:buildCrew===r.name?"#fff":"#475569",
+                border:buildCrew===r.name?"none":"1px solid #e2e8f0"}}>{r.name}</span>))}
+            <div style={{flex:1}}/>
+            <span onClick={cancelBuild} style={{padding:"4px 10px",borderRadius:99,fontSize:10,fontWeight:600,cursor:"pointer",background:"#fee2e2",color:"#991b1b"}}>Cancel</span>
+            <span onClick={saveBuild} style={{padding:"4px 10px",borderRadius:99,fontSize:10,fontWeight:700,cursor:"pointer",background:"#dcfce7",color:"#166534"}}>Save Route</span>
+          </>)}
+        </div>
+        <DotMap selected={buildMode?null:sel} onSelect={buildMode?()=>{}:setSel} showCrew={buildMode?null:showCrew} onHover={setHov} hovered={hov}
+               buildMode={buildMode} buildRoute={customRoute} buildColor={buildColor} onBuildTap={onBuildTap}/>
+      </Card>
+      {/* Route builder right panel */}
+      {buildMode&&(<Card style={{maxHeight:520,overflowY:"auto"}}>
+        <div style={{fontWeight:700,fontSize:15,color:"#0f172a",marginBottom:4}}>
+          {buildCrew} Route — {customRoute.length} stops
+        </div>
+        <div style={{fontSize:11,color:"#94a3b8",marginBottom:12}}>Drag order with arrows · tap dot on map to add/remove</div>
+        {customRoute.length===0&&<div style={{fontSize:12,color:"#94a3b8",fontStyle:"italic",padding:20,textAlign:"center"}}>Tap sites on the map to build a route</div>}
+        {customRoute.map((id,i)=>{const s=sites.find(x=>x.id===id);if(!s)return null;return(
+          <div key={id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:i>0?"1px solid #f8fafc":"none"}}>
+            <div style={{width:22,height:22,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,
+              background:buildColor,color:"#fff"}}>{i+1}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:500,color:"#1e293b"}}><TypeIcon type={s.type}/> {s.name}</div>
+              <div style={{fontSize:9,color:"#94a3b8"}}>{s.eq.map(e=>EQ[e]).join(", ")}</div>
+            </div>
+            <Pill status={s.status}/>
+            <div style={{display:"flex",flexDirection:"column",gap:1}}>
+              <span onClick={()=>moveStop(i,-1)} style={{cursor:i===0?"default":"pointer",opacity:i===0?.3:1,fontSize:14,lineHeight:"14px",userSelect:"none"}}>{"▲"}</span>
+              <span onClick={()=>moveStop(i,1)} style={{cursor:i===customRoute.length-1?"default":"pointer",opacity:i===customRoute.length-1?.3:1,fontSize:14,lineHeight:"14px",userSelect:"none"}}>{"▼"}</span>
+            </div>
+            <span onClick={()=>setCustomRoute(customRoute.filter(x=>x!==id))} style={{cursor:"pointer",fontSize:14,color:"#94a3b8"}}>{"✕"}</span>
+          </div>);})}
+        {/* Equipment aggregate */}
+        {customRoute.length>0&&(<div style={{marginTop:14,borderTop:"2px solid #f1f5f9",paddingTop:12}}>
+          <div style={{fontWeight:600,fontSize:12,color:"#0f172a",marginBottom:8}}>{"\uD83D\uDE9A"} Load on Truck</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            {routeEquipAgg().map(([code,ct])=>(<span key={code} style={{display:"inline-flex",alignItems:"center",gap:3,background:"#f0f4f8",borderRadius:6,padding:"4px 8px",fontSize:10,fontWeight:500,color:"#334155"}}>
+              <span style={{fontSize:12}}>{EQIcon[code]}</span>{EQ[code]}<span style={{fontWeight:700,color:"#0f766e",marginLeft:2}}>×{ct}</span>
+            </span>))}
+          </div>
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:6}}>{customRoute.length} stops · {new Set(customRoute.flatMap(id=>(sites.find(s=>s.id===id)||{eq:[]}).eq)).size} unique equipment types</div>
+        </div>)}
+      </Card>)}
+      {!buildMode&&site&&(<Card>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div><div style={{display:"flex",alignItems:"center",gap:6}}><TypeIcon type={site.type}/><span style={{fontWeight:700,fontSize:16,color:"#0f172a"}}>{site.name}</span></div>
+          <div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{site.type} · Assigned: {site.crew} Crew</div></div>
+          <Pill status={site.status}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          {[["Days Since Maint",site.ds+"d",site.status==="red"?R:site.status==="yellow"?Y:G],
+            ["Growth Rate",site.rate,site.rate==="fast"?R:site.rate==="medium"?Y:"#64748b"],
+            ["Days to Yellow",site.daysToYellow===0?(site.status==="green"?"now":"—"):site.daysToYellow+"d",site.daysToYellow<=2?R:G],
+            ["Days to Red",site.daysToRed===0?(site.status!=="red"?"now":"—"):site.daysToRed+"d",site.daysToRed<=3?R:G]
+          ].map(([l,v,c])=>(<div key={l} style={{background:"#f8fafc",borderRadius:8,padding:10}}>
+            <div style={{fontSize:10,color:"#94a3b8",marginBottom:3}}>{l}</div>
+            <div style={{fontSize:18,fontWeight:700,color:c}}>{v}</div>
+          </div>))}
+        </div>
+        {/* Equipment needed */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#64748b",marginBottom:6}}>Equipment Needed</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            {site.eq.map(e=>(<span key={e} style={{display:"inline-flex",alignItems:"center",gap:3,background:"#f0f4f8",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:500,color:"#334155"}}>
+              <span style={{fontSize:12}}>{EQIcon[e]}</span>{EQ[e]}
+            </span>))}
+          </div>
+        </div>
+        {/* Growth model bar */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#64748b",marginBottom:6}}>Growth Model Timeline</div>
+          <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:"#f1f5f9"}}>
+            {(()=>{const[yt,rt]=TH[site.rate];const pctG=Math.min(100,(yt/rt)*100);const pctY=Math.min(100,((rt-yt)/rt)*100);
+              const pos=Math.min(100,(site.ds/rt)*100);
+              return(<>{React.createElement("div",{style:{width:pctG+"%",background:G,opacity:.4}})}{React.createElement("div",{style:{width:pctY+"%",background:Y,opacity:.4}})}{React.createElement("div",{style:{flex:1,background:R,opacity:.4}})}</>)})()}
+          </div>
+          <div style={{position:"relative",height:14,marginTop:-14}}>
+            <div style={{position:"absolute",left:Math.min(97,Math.max(0,(site.ds/TH[site.rate][1])*100))+"%",top:0,width:3,height:14,background:"#0f172a",borderRadius:2}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"#94a3b8",marginTop:4}}>
+            <span>Day 0 (maintained)</span><span>Day {TH[site.rate][0]} (yellow)</span><span>Day {TH[site.rate][1]}+ (red)</span>
+          </div>
+        </div>
+      </Card>)}
+      </div>
+    {/* Growth predictions */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:10}}>Growth Model — Approaching Yellow</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:10}}>{approaching.length} green sites turning yellow within 3 days</div>
+        {approaching.slice(0,5).map(s=>(<div key={s.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid #f8fafc"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><TypeIcon type={s.type}/><span style={{fontSize:12,fontWeight:500,color:"#334155"}}>{s.name}</span></div>
+          <span style={{fontSize:11,fontWeight:700,color:s.daysToYellow<=1?R:Y}}>{s.daysToYellow===0?"Today":s.daysToYellow+"d"}</span>
+        </div>))}
+        {approaching.length===0&&<div style={{fontSize:12,color:"#94a3b8",fontStyle:"italic"}}>No sites approaching yellow</div>}
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:10}}>Growth Model — Approaching Red</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:10}}>{critical.length} yellow sites turning red within 3 days</div>
+        {critical.slice(0,5).map(s=>(<div key={s.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid #f8fafc"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><TypeIcon type={s.type}/><span style={{fontSize:12,fontWeight:500,color:"#334155"}}>{s.name}</span></div>
+          <span style={{fontSize:11,fontWeight:700,color:R}}>{s.daysToRed===0?"Today":s.daysToRed+"d"}</span>
+        </div>))}
+        {critical.length===0&&<div style={{fontSize:12,color:"#94a3b8",fontStyle:"italic"}}>No sites approaching red</div>}
+      </Card>
+    </div>
+    <Card>
+      <div style={{fontWeight:600,color:"#0f172a",marginBottom:12}}>Platform Impact — Since Launch</div>
+      <ResponsiveContainer width="100%" height={180}>
+        <AreaChart data={trendData}>
+          <defs><linearGradient id="gR2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={R} stopOpacity={.3}/><stop offset="100%" stopColor={R} stopOpacity={0}/></linearGradient>
+          <linearGradient id="gB2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={B} stopOpacity={.3}/><stop offset="100%" stopColor={B} stopOpacity={0}/></linearGradient></defs>
+          <XAxis dataKey="mo" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+          <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+          <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+          <Area type="monotone" dataKey="red" name="% Time in Red" stroke={R} fill="url(#gR2)" strokeWidth={2}/>
+          <Area type="monotone" dataKey="util" name="% Crew Utilization" stroke={B} fill="url(#gB2)" strokeWidth={2}/>
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  </div>);
+};
+
+// ═══════════════════════════════════════════════
+// CREW WORKFLOW
+// ═══════════════════════════════════════════════
+const CrewWorkflow=()=>{
+  const route=crewRoutes[0]; // Alpha demo
+  const [step,setStep]=useState(3); // 0-indexed, 3 = 4th site (current)
+  const [phase,setPhase]=useState("arrived"); // enroute|arrived|confirmed|complete
+  const [confirmed,setConfirmed]=useState(null);
+  const [reorder,setReorder]=useState(false);
+  const [localRoute,setLocalRoute]=useState([...route.route]);
+
+  const getSite=id=>sites.find(s=>s.id===id);
+  const currentSite=getSite(localRoute[step]);
+  const completedSteps=alphaLog.slice(0,step);
+  const avgTravel=completedSteps.filter(l=>l.travel).reduce((a,l)=>a+l.travel,0)/(completedSteps.filter(l=>l.travel).length||1);
+  const avgMaint=completedSteps.filter(l=>l.maint).reduce((a,l)=>a+l.maint,0)/(completedSteps.filter(l=>l.maint).length||1);
+
+  const doConfirm=(val)=>{setConfirmed(val);setPhase("confirmed");};
+  const doComplete=()=>{setPhase("complete");};
+  const doNext=()=>{if(step<localRoute.length-1){setStep(step+1);setPhase("arrived");setConfirmed(null);}};
+  const moveCrewStop=(idx,dir)=>{if(idx<=step)return;const nr=[...localRoute];const ni=idx+dir;if(ni<=step||ni>=nr.length)return;[nr[idx],nr[ni]]=[nr[ni],nr[idx]];setLocalRoute(nr);};
+
+  return(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}>
+    {/* Phone mockup */}
+    <div style={{display:"flex",justifyContent:"center"}}>
+      <div style={{width:380,background:"#fff",borderRadius:28,boxShadow:"0 8px 30px rgba(0,0,0,.12)",border:"8px solid #1e293b",overflow:"hidden"}}>
+        <div style={{background:"#0f766e",padding:"12px 16px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><div style={{fontSize:13,fontWeight:700,letterSpacing:.5}}>ALPHA CREW ROUTE</div>
+          <div style={{fontSize:10,opacity:.8}}>{step}/{localRoute.length} sites · {route.size} members · Feb 16, 2026</div></div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <span onClick={()=>setReorder(!reorder)} style={{background:reorder?"rgba(255,255,255,.4)":"rgba(255,255,255,.2)",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+              {reorder?"✓ Done":"↕ Reorder"}
+            </span>
+            <div style={{background:"rgba(255,255,255,.2)",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:600}}>{step<localRoute.length?"▶ Active":"Done"}</div>
+          </div>
+        </div>
+        <div style={{maxHeight:540,overflowY:"auto"}}>
+          {/* Route list */}
+          <div style={{padding:"8px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0"}}>
+            {localRoute.map((sid,i)=>{
+              const s=getSite(sid);const done=i<step;const current=i===step;const log=alphaLog[i];const upcoming=i>step;
+              return(<div key={sid} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",opacity:done?.6:current?1:.4}}>
+                <div style={{width:22,height:22,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,
+                  background:done?G:current?route.color:"#e2e8f0",color:done||current?"#fff":"#94a3b8"}}>{done?"✓":i+1}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,fontWeight:current?700:500,color:current?"#0f172a":"#64748b"}}>{s.name}</div>
+                  {done&&log&&<div style={{fontSize:9,color:"#94a3b8"}}>{log.arrived} – {log.done} · {log.maint}min</div>}
+                  {upcoming&&<div style={{fontSize:9,color:"#94a3b8"}}>{s.eq.map(e=>EQ[e]).join(", ")}</div>}
+                </div>
+                {current&&<span style={{fontSize:9,background:"#0f766e",color:"#fff",padding:"2px 6px",borderRadius:99,fontWeight:600}}>NOW</span>}
+                {reorder&&upcoming&&(<div style={{display:"flex",flexDirection:"column",gap:0}}>
+                  <span onClick={()=>moveCrewStop(i,-1)} style={{cursor:i<=step+1?"default":"pointer",opacity:i<=step+1?.3:1,fontSize:12,lineHeight:"12px",userSelect:"none",color:"#0f766e"}}>{"▲"}</span>
+                  <span onClick={()=>moveCrewStop(i,1)} style={{cursor:i>=localRoute.length-1?"default":"pointer",opacity:i>=localRoute.length-1?.3:1,fontSize:12,lineHeight:"12px",userSelect:"none",color:"#0f766e"}}>{"▼"}</span>
+                </div>)}
+              </div>);
+            })}
+          </div>
+          {/* Active site panel */}
+          {currentSite&&(<div style={{padding:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+              <TypeIcon type={currentSite.type}/>
+              <span style={{fontWeight:700,fontSize:15,color:"#0f172a"}}>{currentSite.name}</span>
+            </div>
+            {/* Equipment for this stop */}
+            <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
+              {currentSite.eq.map(e=>(<span key={e} style={{display:"inline-flex",alignItems:"center",gap:2,background:"#f0f4f8",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:500,color:"#334155"}}>
+                <span style={{fontSize:10}}>{EQIcon[e]}</span>{EQ[e]}
+              </span>))}
+            </div>
+            {/* Model prediction */}
+            <div style={{background:"#f0f9ff",borderRadius:8,padding:10,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:18}}>{"\uD83E\uDDE0"}</span>
+              <div><div style={{fontSize:11,fontWeight:600,color:"#075985"}}>Growth Model Predicts</div>
+              <div style={{fontSize:12,color:"#0369a1"}}>{currentSite.status==="green"?"\uD83D\uDFE2 Good condition":currentSite.status==="yellow"?"\uD83D\uDFE1 Fair — maintenance due":"\uD83D\uDD34 Needs immediate attention"}</div></div>
+            </div>
+            {/* Timestamps */}
+            {alphaLog[step]&&(<div style={{display:"flex",gap:8,marginBottom:12}}>
+              <div style={{flex:1,background:"#f8fafc",borderRadius:8,padding:8,textAlign:"center"}}>
+                <div style={{fontSize:9,color:"#94a3b8"}}>Arrived</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{alphaLog[step].arrived}</div>
+              </div>
+              <div style={{flex:1,background:"#f8fafc",borderRadius:8,padding:8,textAlign:"center"}}>
+                <div style={{fontSize:9,color:"#94a3b8"}}>Travel</div>
+                <div style={{fontSize:14,fontWeight:700,color:B}}>{alphaLog[step].travel?alphaLog[step].travel+" min":"—"}</div>
+              </div>
+              <div style={{flex:1,background:"#f8fafc",borderRadius:8,padding:8,textAlign:"center"}}>
+                <div style={{fontSize:9,color:"#94a3b8"}}>On-Site</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#0f766e"}}>{phase==="complete"?"18 min":"..."}</div>
+              </div>
+            </div>)}
+            {/* Confirm condition */}
+            {(phase==="arrived"||phase==="confirmed")&&(<div>
+              <div style={{fontSize:12,fontWeight:600,color:"#334155",marginBottom:8}}>Confirm Actual Condition</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:12}}>
+                {[["green","\uD83D\uDFE2","Good"],["yellow","\uD83D\uDFE1","Fair"],["orange","\uD83D\uDFE0","Poor"],["red","\uD83D\uDD34","Critical"]].map(([v,e,l])=>(
+                  <div key={v} onClick={()=>doConfirm(v)} style={{padding:"8px 4px",borderRadius:8,textAlign:"center",cursor:"pointer",
+                    border:confirmed===v?"2px solid #0f766e":"2px solid #e2e8f0",background:confirmed===v?"#f0fdfa":"#fff"}}>
+                    <div style={{fontSize:18}}>{e}</div><div style={{fontSize:10,fontWeight:600}}>{l}</div>
+                  </div>))}
+              </div>
+              {confirmed&&confirmed!==currentSite.status&&(
+                <div style={{background:"#fffbeb",borderRadius:8,padding:8,marginBottom:10,fontSize:11,color:"#92400e"}}>
+                  <strong>Model feedback:</strong> You reported {confirmed}, model predicted {currentSite.status}. This trains the model.
+                </div>
+              )}
+            </div>)}
+            {/* Photo + Notes */}
+            {phase==="confirmed"&&(<div>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <div style={{flex:1,border:"2px dashed #cbd5e1",borderRadius:8,padding:12,textAlign:"center",cursor:"pointer",background:"#f8fafc"}}>
+                  <Camera size={18} color="#94a3b8" style={{display:"block",margin:"0 auto 4px"}}/><div style={{fontSize:10,color:"#94a3b8"}}>Photo</div>
+                </div>
+                <div style={{flex:2}}><textarea rows={2} placeholder="Notes or idea..." style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,resize:"none",boxSizing:"border-box",fontFamily:"inherit"}}/></div>
+              </div>
+              <button onClick={doComplete} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:"#0f766e",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                {"✅"} Complete Maintenance → Green
+              </button>
+            </div>)}
+            {/* Complete state */}
+            {phase==="complete"&&(<div style={{textAlign:"center"}}>
+              <div style={{background:"#f0fdf4",borderRadius:10,padding:16,marginBottom:12}}>
+                <div style={{fontSize:28,marginBottom:4}}>{"✅"}</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#166534"}}>Site Flipped to Green!</div>
+                <div style={{fontSize:12,color:"#166534",marginTop:4}}>+50 pts (site to green) · +15 pts (report) · +10 (model feedback)</div>
+              </div>
+              <button onClick={doNext} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0f172a",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                Next Site → {step<localRoute.length-1?getSite(localRoute[step+1])?.name:"Done"}
+              </button>
+            </div>)}
+          </div>)}
+        </div>
+      </div>
+    </div>
+    {/* Right panel */}
+    <div>
+      <Card style={{marginBottom:16}}>
+        <div style={{fontWeight:700,color:"#0f172a",marginBottom:6}}>How Every Tap Creates Data</div>
+        <div style={{fontSize:12,color:"#64748b",lineHeight:1.7}}>
+          {[
+            ["\uD83D\uDCCD","Arrive at site","Logs travel time from previous site"],
+            ["\uD83D\uDFE2","Confirm condition","Trains growth model — predicted vs actual"],
+            ["\uD83D\uDCF7","Snap photo","Geotagged visual history of every site"],
+            ["✅","Complete maintenance","Logs service time, flips site to green"],
+            ["\uD83D\uDCA1","Submit idea","Crew suggestions that optimize routes"],
+          ].map(([e,t,d])=>(
+            <div key={t} style={{display:"flex",gap:8,padding:"4px 0"}}>
+              <span style={{fontSize:14,width:20}}>{e}</span>
+              <div><strong style={{color:"#334155"}}>{t}</strong> — <span>{d}</span></div>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card style={{marginBottom:16}}>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:10}}>Today's Route Stats — Alpha Crew</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {[["Sites Complete",step+"/"+localRoute.length,"#0f766e"],["Crew Size",route.size+" members",B],
+            ["Avg Maint/Site",avgMaint.toFixed(0)+" min","#8b5cf6"],["Points Earned",((step)*75+15),"#f97316"]
+          ].map(([l,v,c])=>(<div key={l} style={{background:"#f8fafc",borderRadius:8,padding:10}}>
+            <div style={{fontSize:10,color:"#94a3b8"}}>{l}</div>
+            <div style={{fontSize:18,fontWeight:700,color:c}}>{v}</div>
+          </div>))}
+        </div>
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:8}}>Growth Model Feedback Loop</div>
+        <div style={{fontSize:12,color:"#64748b",lineHeight:1.6,marginBottom:10}}>
+          Sites naturally degrade: grass grows, litter accumulates, equipment wears. The <strong style={{color:"#0f766e"}}>growth model</strong> predicts
+          when each site transitions green → yellow → red based on season, site type, and historical patterns.
+        </div>
+        <div style={{background:"#f0f4f8",borderRadius:8,padding:12}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <span style={{fontSize:12,fontWeight:600,color:"#334155"}}>Model Accuracy</span>
+            <span style={{fontSize:14,fontWeight:700,color:"#0f766e"}}>89%</span>
+          </div>
+          <div style={{height:6,borderRadius:3,background:"#e2e8f0",overflow:"hidden"}}>
+            <div style={{width:"89%",height:"100%",background:"#0f766e",borderRadius:3}}/>
+          </div>
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Crew confirmations have improved accuracy from 72% to 89%</div>
+        </div>
+      </Card>
+    </div>
+  </div>);
+};
+
+// ═══════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════
+const LeaderboardView=()=>{
+  const medal=["\uD83E\uDD47","\uD83E\uDD48","\uD83E\uDD49","4","5"];
+  return(<div>
+    <Card style={{background:"linear-gradient(135deg,#0f766e 0%,#134e4a 100%)",color:"#fff",marginBottom:20,padding:24}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div style={{fontSize:11,textTransform:"uppercase",letterSpacing:1.5,opacity:.7,marginBottom:4}}>Crew of the Week</div>
+        <div style={{fontSize:24,fontWeight:800}}>Alpha Crew</div>
+        <div style={{opacity:.8,marginTop:4,fontSize:13}}>Led by Marcus Johnson · 12-day streak · 89% model accuracy</div></div>
+        <div style={{fontSize:56}}>{"\uD83C\uDFC6"}</div>
+      </div>
+    </Card>
+    <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:20}}>
+      <Card>
+        <div style={{fontWeight:700,color:"#0f172a",marginBottom:16,fontSize:15}}>GreenScore Rankings — February</div>
+        {crews.map((c,i)=>(<div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 0",borderTop:i>0?"1px solid #f1f5f9":"none"}}>
+          <div style={{fontSize:i<3?24:16,width:36,textAlign:"center",fontWeight:700,color:i>=3?"#94a3b8":undefined}}>{medal[i]}</div>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontWeight:700,color:"#0f172a",fontSize:14}}>{c.name}</span>
+              {c.streak>=7&&<span style={{fontSize:13}}>{"\uD83D\uDD25"} {c.streak}d</span>}
+              {c.delta>0&&<span style={{fontSize:10,color:G,fontWeight:600}}>{"▲"} {c.delta}</span>}
+              {c.delta<0&&<span style={{fontSize:10,color:R,fontWeight:600}}>{"▼"} {Math.abs(c.delta)}</span>}
+            </div>
+            <div style={{fontSize:11,color:"#94a3b8"}}>{c.lead} · {c.size} members · Zone: {c.zone}</div>
+          </div>
+          <div style={{textAlign:"right"}}><div style={{fontWeight:800,fontSize:18,color:"#0f766e"}}>{c.pts.toLocaleString()}</div><div style={{fontSize:10,color:"#94a3b8"}}>pts</div></div>
+        </div>))}
+      </Card>
+      <div>
+        <Card style={{marginBottom:16}}>
+          <div style={{fontWeight:700,color:"#0f172a",marginBottom:12}}>How Points Work</div>
+          <div style={{fontSize:12,color:"#64748b",lineHeight:1.7}}>
+            {[["Site to Green","+50 pts",G],["Field Report","+15 pts",B],["Model Feedback","+10 pts","#8b5cf6"],["Idea Submitted","+25 pts",Y],["Idea Implemented","+100 pts","#f97316"],["Streak Bonus","+10/day","#0f766e"]].map(([l,p,c])=>(
+              <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}><span>{l}</span><span style={{fontWeight:700,color:c}}>{p}</span></div>
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <div style={{fontWeight:700,color:"#0f172a",marginBottom:12}}>Achievements</div>
+          {badges.map(b=>(<div key={b.name} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid #f8fafc"}}>
+            <span style={{fontSize:20}}>{b.icon}</span>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1e293b"}}>{b.name}</div><div style={{fontSize:10,color:"#94a3b8"}}>{b.desc}</div></div>
+            <div style={{display:"flex",gap:3}}>{b.holders.map(h=>(<span key={h} style={{background:"#f0fdfa",color:"#0f766e",fontSize:8,padding:"2px 5px",borderRadius:99,fontWeight:600}}>{h}</span>))}</div>
+          </div>))}
+        </Card>
+      </div>
+    </div>
+    <Card style={{marginTop:20}}>
+      <div style={{fontWeight:600,color:"#0f172a",marginBottom:12}}>Weekly Points Trend</div>
+      <ResponsiveContainer width="100%" height={180}>
+        <LineChart data={weekPts}>
+          <XAxis dataKey="w" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+          <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+          <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+          <Line type="monotone" dataKey="Alpha" stroke="#0f766e" strokeWidth={2} dot={{r:3}}/>
+          <Line type="monotone" dataKey="Bravo" stroke={B} strokeWidth={2} dot={{r:3}}/>
+          <Line type="monotone" dataKey="Charlie" stroke={R} strokeWidth={2} dot={{r:3}}/>
+          <Line type="monotone" dataKey="Delta" stroke="#8b5cf6" strokeWidth={2} dot={{r:3}}/>
+          <Line type="monotone" dataKey="Echo" stroke={Y} strokeWidth={2} dot={{r:3}}/>
+        </LineChart>
+      </ResponsiveContainer>
+    </Card>
+  </div>);
+};
+
+// ═══════════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════════
+const Analytics=()=>{
+  const travData=[{name:"Alpha",avg:9.0},{name:"Bravo",avg:7.2},{name:"Charlie",avg:14.1},{name:"Delta",avg:10.8},{name:"Echo",avg:8.5}];
+  const maintByType=[{type:"Park",avg:28},{type:"Median",avg:18},{type:"Facility",avg:15}];
+
+  // Crew size vs completion time data — larger crews finish faster per site
+  const crewPerfData=[
+    {name:"Alpha",  size:4, sites:6,  avgMaint:22, totalHrs:3.8, perMember:0.95, color:"#0f766e"},
+    {name:"Bravo",  size:5, sites:10, avgMaint:19, totalHrs:5.2, perMember:1.04, color:B},
+    {name:"Charlie",size:3, sites:7,  avgMaint:31, totalHrs:5.6, perMember:1.87, color:R},
+    {name:"Delta",  size:3, sites:6,  avgMaint:28, totalHrs:4.8, perMember:1.60, color:"#8b5cf6"},
+    {name:"Echo",   size:4, sites:6,  avgMaint:24, totalHrs:4.2, perMember:1.05, color:Y},
+  ];
+
+  // Seasonal growth rates and staffing model
+  const seasonalData=[
+    {mo:"Mar", growth:1.8, needed:22, current:19, fastPct:45},
+    {mo:"Apr", growth:2.4, needed:24, current:19, fastPct:55},
+    {mo:"May", growth:2.9, needed:26, current:19, fastPct:65},
+    {mo:"Jun", growth:3.2, needed:28, current:19, fastPct:72},
+    {mo:"Jul", growth:3.0, needed:27, current:19, fastPct:68},
+    {mo:"Aug", growth:2.6, needed:25, current:19, fastPct:58},
+    {mo:"Sep", growth:2.0, needed:22, current:19, fastPct:42},
+    {mo:"Oct", growth:1.4, needed:19, current:19, fastPct:28},
+    {mo:"Nov", growth:0.8, needed:16, current:19, fastPct:15},
+    {mo:"Dec", growth:0.4, needed:14, current:19, fastPct:8},
+    {mo:"Jan", growth:0.5, needed:15, current:19, fastPct:10},
+    {mo:"Feb", growth:1.0, needed:18, current:19, fastPct:22},
+  ];
+
+  const totalMembers=crewRoutes.reduce((a,c)=>a+c.size,0);
+  const peakDeficit=Math.max(...seasonalData.map(d=>d.needed-d.current));
+  const surplusMonths=seasonalData.filter(d=>d.current>d.needed).length;
+
+  return(<div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:4}}>Growth Model Accuracy — Trend</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>Crew confirmations training the model over time</div>
+        <ResponsiveContainer width="100%" height={180}>
+          <AreaChart data={trendData}>
+            <defs><linearGradient id="gA" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" stopOpacity={.3}/><stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/></linearGradient></defs>
+            <XAxis dataKey="mo" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false} domain={[60,100]}/>
+            <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+            <Area type="monotone" dataKey="accuracy" stroke="#8b5cf6" fill="url(#gA)" strokeWidth={2} name="Accuracy %"/>
+          </AreaChart>
+        </ResponsiveContainer>
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:4}}>Avg Travel Time by Crew</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>Minutes between sites — lower is better routing</div>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={travData}>
+            <XAxis dataKey="name" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+            <Bar dataKey="avg" name="Avg Minutes" radius={[4,4,0,0]}>
+              {travData.map((d,i)=><Cell key={i} fill={d.avg>12?R:d.avg>9?Y:"#0f766e"}/>)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <div style={{background:"#fffbeb",borderRadius:8,padding:10,marginTop:8,fontSize:11,color:"#92400e"}}>
+          <strong>Insight:</strong> Charlie Crew averages 14.1 min between sites — their East Waco sites are spread far apart. Route consolidation could save 45+ min/day.
+        </div>
+      </Card>
+    </div>
+    {/* NEW: Crew size performance */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:4}}>Completion Time vs Crew Size</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>Avg minutes per site — larger crews finish faster</div>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={crewPerfData}>
+            <XAxis dataKey="name" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false} label={{value:"min/site",angle:-90,position:"insideLeft",style:{fontSize:10,fill:"#94a3b8"}}}/>
+            <Tooltip contentStyle={{borderRadius:8,fontSize:12}} formatter={(v,n)=>[v+(n==="avgMaint"?" min":" members"),n==="avgMaint"?"Avg Maint":"Crew Size"]}/>
+            <Bar dataKey="avgMaint" name="Avg Maint" radius={[4,4,0,0]}>
+              {crewPerfData.map((d,i)=><Cell key={i} fill={d.color}/>)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          {crewPerfData.map(d=>(<div key={d.name} style={{flex:1,background:"#f8fafc",borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+            <div style={{fontSize:9,color:"#94a3b8"}}>{d.name}</div>
+            <div style={{fontSize:14,fontWeight:700,color:d.color}}>{d.size}</div>
+            <div style={{fontSize:8,color:"#94a3b8"}}>members</div>
+          </div>))}
+        </div>
+        <div style={{background:"#f0f9ff",borderRadius:8,padding:10,marginTop:10,fontSize:11,color:"#075985"}}>
+          <strong>Pattern:</strong> 3-person crews (Charlie, Delta) average 29.5 min/site vs 21.7 min for 4-5 person crews — a 36% efficiency gap. Adding 1 member to each could save ~2.5 hrs/day across both crews.
+        </div>
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:4}}>Hours per Member per Day</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>Workload balance — lower means better distribution</div>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={crewPerfData}>
+            <XAxis dataKey="name" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false} domain={[0,2.5]}/>
+            <Tooltip contentStyle={{borderRadius:8,fontSize:12}} formatter={(v)=>[v.toFixed(2)+" hrs","Per Member"]}/>
+            <Bar dataKey="perMember" name="Hrs/Member" radius={[4,4,0,0]}>
+              {crewPerfData.map((d,i)=><Cell key={i} fill={d.perMember>1.5?R:d.perMember>1.1?Y:"#0f766e"}/>)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        <div style={{background:"#fffbeb",borderRadius:8,padding:10,marginTop:10,fontSize:11,color:"#92400e"}}>
+          <strong>Burnout risk:</strong> Charlie (1.87 hrs/member) and Delta (1.60 hrs/member) are working significantly harder per person. This correlates with lower efficiency scores and shorter streaks.
+        </div>
+      </Card>
+    </div>
+    {/* NEW: Seasonal staffing */}
+    <Card style={{marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div>
+          <div style={{fontWeight:600,color:"#0f172a"}}>Seasonal Staffing Model</div>
+          <div style={{fontSize:12,color:"#64748b",marginTop:2}}>Growth rate drives staffing needs — crew size should flex with the seasons</div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <div style={{background:"#dcfce7",borderRadius:8,padding:"6px 12px",textAlign:"center"}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#166534"}}>{totalMembers}</div>
+            <div style={{fontSize:9,color:"#166534"}}>Current Staff</div>
+          </div>
+          <div style={{background:"#fee2e2",borderRadius:8,padding:"6px 12px",textAlign:"center"}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#991b1b"}}>+{peakDeficit}</div>
+            <div style={{fontSize:9,color:"#991b1b"}}>Peak Deficit</div>
+          </div>
+          <div style={{background:"#f0f9ff",borderRadius:8,padding:"6px 12px",textAlign:"center"}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#075985"}}>{surplusMonths}</div>
+            <div style={{fontSize:9,color:"#075985"}}>Surplus Months</div>
+          </div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={seasonalData}>
+          <defs>
+            <linearGradient id="gNeeded" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={R} stopOpacity={.2}/><stop offset="100%" stopColor={R} stopOpacity={0}/></linearGradient>
+            <linearGradient id="gGrowth" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f97316" stopOpacity={.3}/><stop offset="100%" stopColor="#f97316" stopOpacity={0}/></linearGradient>
+          </defs>
+          <XAxis dataKey="mo" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+          <YAxis yAxisId="left" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false} label={{value:"people",angle:-90,position:"insideLeft",style:{fontSize:10,fill:"#94a3b8"}}}/>
+          <YAxis yAxisId="right" orientation="right" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false} domain={[0,4]} label={{value:"growth rate",angle:90,position:"insideRight",style:{fontSize:10,fill:"#94a3b8"}}}/>
+          <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+          <Area yAxisId="right" type="monotone" dataKey="growth" stroke="#f97316" fill="url(#gGrowth)" strokeWidth={2} name="Growth Rate"/>
+          <Area yAxisId="left" type="monotone" dataKey="needed" stroke={R} fill="url(#gNeeded)" strokeWidth={2} name="Staff Needed" strokeDasharray="6,3"/>
+          <Line yAxisId="left" type="monotone" dataKey="current" stroke="#0f766e" strokeWidth={2} dot={false} name="Current Staff" strokeDasharray="0"/>
+        </AreaChart>
+      </ResponsiveContainer>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginTop:12}}>
+        <div style={{background:"#fef2f2",borderRadius:8,padding:10,borderLeft:"3px solid "+R}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#991b1b",marginBottom:4}}>Peak Season (May–Jul)</div>
+          <div style={{fontSize:11,color:"#64748b",lineHeight:1.5}}>Need 26–28 staff. Add 7–9 seasonal workers. Growth rates 2x winter. Sites hit red in 4 days vs 8.</div>
+        </div>
+        <div style={{background:"#fffbeb",borderRadius:8,padding:10,borderLeft:"3px solid "+Y}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#854d0e",marginBottom:4}}>Shoulder Season (Mar–Apr, Aug–Sep)</div>
+          <div style={{fontSize:11,color:"#64748b",lineHeight:1.5}}>Need 22–25 staff. Add 3–6 seasonal workers. Reassign from 5-person crews or bring on part-timers.</div>
+        </div>
+        <div style={{background:"#f0fdf4",borderRadius:8,padding:10,borderLeft:"3px solid "+G}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#166534",marginBottom:4}}>Off Season (Oct–Feb)</div>
+          <div style={{fontSize:11,color:"#64748b",lineHeight:1.5}}>14–19 staff sufficient. Current size adequate. Use surplus capacity for deep maintenance, equipment repair, training.</div>
+        </div>
+      </div>
+    </Card>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:4}}>Maintenance Time by Site Type</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>Average minutes per service visit</div>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={maintByType}>
+            <XAxis dataKey="type" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+            <Bar dataKey="avg" fill="#0f766e" radius={[4,4,0,0]} name="Avg Minutes"/>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,color:"#0f172a",marginBottom:4}}>Equipment Utilization</div>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>Active vs total units by category</div>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={equipData} barGap={2}>
+            <XAxis dataKey="name" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+            <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+            <Bar dataKey="total" fill="#e2e8f0" radius={[4,4,0,0]} name="Total"/>
+            <Bar dataKey="active" fill="#0f766e" radius={[4,4,0,0]} name="Active"/>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+    <Card>
+      <div style={{fontWeight:600,color:"#0f172a",marginBottom:4}}>Site Status Over Time</div>
+      <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>% of sites in each status category</div>
+      <ResponsiveContainer width="100%" height={180}>
+        <AreaChart data={[
+          {mo:"Sep",green:45,yellow:25,red:30},{mo:"Oct",green:52,yellow:24,red:24},{mo:"Nov",green:55,yellow:25,red:20},
+          {mo:"Dec",green:58,yellow:24,red:18},{mo:"Jan",green:58,yellow:22,red:20},{mo:"Feb",green:60,yellow:17,red:23},
+        ]}>
+          <XAxis dataKey="mo" tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+          <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false}/>
+          <Tooltip contentStyle={{borderRadius:8,fontSize:12}}/>
+          <Area type="monotone" dataKey="green" stackId="1" stroke={G} fill={G} fillOpacity={.5} name="% Green"/>
+          <Area type="monotone" dataKey="yellow" stackId="1" stroke={Y} fill={Y} fillOpacity={.5} name="% Yellow"/>
+          <Area type="monotone" dataKey="red" stackId="1" stroke={R} fill={R} fillOpacity={.5} name="% Red"/>
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  </div>);
+};
+
+// ═══════════════════════════════════════════════
+// MAIN APP
+// ═══════════════════════════════════════════════
+const navItems=[
+  {id:"dash",label:"Dashboard",icon:MapIcon},{id:"crew",label:"Crew Workflow",icon:Leaf},
+  {id:"board",label:"Leaderboard",icon:Trophy},{id:"stats",label:"Analytics",icon:BarChart3},
+];
+
+function App(){
+  const[view,setView]=useState("dash");
+  return(
+    <div style={{display:"flex",height:"100vh",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",background:"#f1f5f9"}}>
+      <div style={{width:200,background:"#0f172a",padding:"20px 0",display:"flex",flexDirection:"column",flexShrink:0}}>
+        <div style={{padding:"0 16px",marginBottom:28}}>
+          <div style={{color:"#fff",fontWeight:800,fontSize:15,letterSpacing:.3}}>WACO GROUNDS</div>
+          <div style={{color:"#94a3b8",fontSize:11,marginTop:2}}>Intelligence Platform</div>
+        </div>
+        {navItems.map(n=>{const active=view===n.id;const IC=n.icon;return(
+          <div key={n.id} onClick={()=>setView(n.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",cursor:"pointer",margin:"2px 8px",borderRadius:8,
+            background:active?"#1e293b":"transparent",color:active?"#fff":"#94a3b8",fontWeight:active?600:400,fontSize:13}}><IC size={17}/>{n.label}</div>
+        )})}
+        <div style={{flex:1}}/>
+        <div style={{padding:"12px 16px",borderTop:"1px solid #1e293b",margin:"0 8px"}}>
+          <div style={{fontSize:11,color:"#64748b"}}>Pilot Program</div>
+          <div style={{fontSize:12,color:"#94a3b8",fontWeight:500}}>City of Waco × AI</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto"}}>
+        <div style={{padding:"20px 28px",borderBottom:"1px solid #e2e8f0",background:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><div style={{fontSize:18,fontWeight:700,color:"#0f172a"}}>{navItems.find(n=>n.id===view)?.label}</div>
+          <div style={{fontSize:12,color:"#94a3b8"}}>Grounds Maintenance Operations — February 2026</div></div>
+          <div style={{background:"#f0fdf4",borderRadius:8,padding:"6px 12px",display:"flex",alignItems:"center",gap:6}}>
+            <div style={{width:7,height:7,borderRadius:99,background:G}}/><span style={{fontSize:12,fontWeight:600,color:"#166534"}}>System Live</span>
+          </div>
+        </div>
+        <div style={{padding:24}}>
+          {view==="dash"&&<Dashboard/>}
+          {view==="crew"&&<CrewWorkflow/>}
+          {view==="board"&&<LeaderboardView/>}
+          {view==="stats"&&<Analytics/>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
