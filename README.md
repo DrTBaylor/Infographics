@@ -91,6 +91,7 @@ This is not meant as a public repo just yet.  Many of the graphics are under dev
 - [Prompting Strategies Infographic](prompting-strategies-infographic.html) (Fail)
 - [RAG — How AI Gets the Right Information](rag-presentation.html)
 - [AI Creator Ethics — The Tradeoff Compass](AIThoughtCalculator.html)
+- [AI-Assisted Rubric Creation for Canvas LMS](ai-rubric-canvas.html)
 
 ## Demos
 

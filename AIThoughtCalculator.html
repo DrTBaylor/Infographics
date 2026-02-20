@@ -271,19 +271,43 @@
         <option value="letterGoogle">Rec Letter → Big Company</option>
         <option value="letterPersonal">Rec Letter → Close Contact</option>
       </optgroup>
-      <optgroup label="Education">
+      <optgroup label="Education &amp; Research">
         <option value="textbook">Digital Textbook</option>
+        <option value="researchPaper">Scientific Research Paper</option>
+        <option value="corpTraining">Corporate Training Materials</option>
+        <option value="langFlashcards">Language Learning Flashcards</option>
       </optgroup>
-      <optgroup label="Writing &amp; Music">
+      <optgroup label="Writing &amp; Speech">
         <option value="creativeWriting">Creative Writing</option>
-        <option value="familySongs">Make AI Songs for Family Event</option>
+        <option value="podcastScript">Podcast Script Writing</option>
+        <option value="weddingSpeech">Wedding Speech</option>
+        <option value="eulogyWriting">Eulogy Writing</option>
+        <option value="standupComedy">Stand-up Comedy Routine</option>
+        <option value="personalJournal">Personal Journal / Diary</option>
       </optgroup>
-      <optgroup label="Visual Art">
+      <optgroup label="Visual Art &amp; Design">
         <option value="artFun">Create Art for Personal Fun</option>
         <option value="artShow">Create Art for an Art Show</option>
+        <option value="childrenBook">Children's Book Illustration</option>
+        <option value="logoDesign">Logo Design for Startup</option>
+        <option value="archSketches">Architecture Concept Sketches</option>
+        <option value="productPhoto">Product Photography</option>
+        <option value="museumDisplay">Museum Display Creation</option>
       </optgroup>
-      <optgroup label="Making &amp; Fabrication">
+      <optgroup label="Music &amp; Media">
+        <option value="familySongs">Make AI Songs for Family Event</option>
+        <option value="filmScore">Film Score Composition</option>
+        <option value="gameLevelDesign">Video Game Level Design</option>
+      </optgroup>
+      <optgroup label="Professional">
+        <option value="resumeWriting">Resume / CV Writing</option>
+        <option value="legalContract">Legal Contract Drafting</option>
+        <option value="socialMedia">Social Media Content Calendar</option>
+      </optgroup>
+      <optgroup label="Making &amp; Games">
         <option value="sprinkler3d">3D Print Parts to Fix Sprinkler</option>
+        <option value="recipeDev">Cooking Recipe Development</option>
+        <option value="boardGameDesign">Board Game Design</option>
       </optgroup>
     </select>
   </div>
@@ -577,6 +601,87 @@ var PRESETS = {
   sprinkler3d: {
     factors: ["verifiability","empowerment","infoDensity","timePressure","fulfillment"],
     vals: { verifiability:9, empowerment:9, infoDensity:8, timePressure:6, fulfillment:6 }
+  },
+  // --- 20 NEW USE CASES ---
+  museumDisplay: {
+    factors: ["infoDensity","empowerment","culturalSensitivity","verifiability","collaborativeJoy"],
+    vals: { infoDensity:8, empowerment:8, culturalSensitivity:7, verifiability:6, collaborativeJoy:7 }
+  },
+  podcastScript: {
+    factors: ["authenticity","originality","fulfillment","audienceEffort","timePressure"],
+    vals: { authenticity:8, originality:7, fulfillment:7, audienceEffort:5, timePressure:6 }
+  },
+  socialMedia: {
+    factors: ["timePressure","empowerment","originality","audienceEffort","fulfillment"],
+    vals: { timePressure:8, empowerment:7, originality:3, audienceEffort:2, fulfillment:2 }
+  },
+  childrenBook: {
+    factors: ["originality","displacement","fulfillment","audienceEffort","authenticity"],
+    vals: { originality:8, displacement:7, fulfillment:8, audienceEffort:7, authenticity:7 }
+  },
+  resumeWriting: {
+    factors: ["infoDensity","recipientScale","empowerment","authenticity","timePressure"],
+    vals: { infoDensity:7, recipientScale:8, empowerment:6, authenticity:4, timePressure:6 }
+  },
+  weddingSpeech: {
+    factors: ["emotionalWeight","authenticity","audienceEffort","fulfillment","originality"],
+    vals: { emotionalWeight:9, authenticity:9, audienceEffort:9, fulfillment:8, originality:7 }
+  },
+  logoDesign: {
+    factors: ["originality","displacement","authenticity","empowerment","longevity"],
+    vals: { originality:8, displacement:7, authenticity:6, empowerment:7, longevity:8 }
+  },
+  researchPaper: {
+    factors: ["infoDensity","disclosureNorms","errorStakes","skillGrowth","originality"],
+    vals: { infoDensity:9, disclosureNorms:9, errorStakes:8, skillGrowth:8, originality:8 }
+  },
+  recipeDev: {
+    factors: ["verifiability","empowerment","fulfillment","collaborativeJoy","originality"],
+    vals: { verifiability:8, empowerment:7, fulfillment:7, collaborativeJoy:7, originality:5 }
+  },
+  gameLevelDesign: {
+    factors: ["empowerment","collaborativeJoy","originality","fulfillment","infoDensity"],
+    vals: { empowerment:9, collaborativeJoy:8, originality:7, fulfillment:8, infoDensity:6 }
+  },
+  corpTraining: {
+    factors: ["infoDensity","recipientScale","empowerment","timePressure","fulfillment"],
+    vals: { infoDensity:8, recipientScale:8, empowerment:7, timePressure:7, fulfillment:2 }
+  },
+  standupComedy: {
+    factors: ["originality","authenticity","fulfillment","audienceEffort","skillGrowth"],
+    vals: { originality:10, authenticity:10, fulfillment:9, audienceEffort:9, skillGrowth:8 }
+  },
+  archSketches: {
+    factors: ["empowerment","originality","verifiability","skillGrowth","collaborativeJoy"],
+    vals: { empowerment:8, originality:7, verifiability:6, skillGrowth:7, collaborativeJoy:7 }
+  },
+  eulogyWriting: {
+    factors: ["emotionalWeight","authenticity","audienceEffort","fulfillment","originality"],
+    vals: { emotionalWeight:10, authenticity:10, audienceEffort:10, fulfillment:7, originality:6 }
+  },
+  productPhoto: {
+    factors: ["displacement","empowerment","verifiability","timePressure","audienceEffort"],
+    vals: { displacement:6, empowerment:8, verifiability:8, timePressure:7, audienceEffort:3 }
+  },
+  langFlashcards: {
+    factors: ["infoDensity","empowerment","verifiability","timePressure","skillGrowth"],
+    vals: { infoDensity:8, empowerment:9, verifiability:8, timePressure:6, skillGrowth:3 }
+  },
+  filmScore: {
+    factors: ["originality","displacement","authenticity","fulfillment","collaborativeJoy"],
+    vals: { originality:8, displacement:8, authenticity:7, fulfillment:8, collaborativeJoy:6 }
+  },
+  legalContract: {
+    factors: ["infoDensity","errorStakes","verifiability","domainExpertise","disclosureNorms"],
+    vals: { infoDensity:9, errorStakes:9, verifiability:7, domainExpertise:9, disclosureNorms:6 }
+  },
+  personalJournal: {
+    factors: ["authenticity","fulfillment","emotionalWeight","skillGrowth","audienceEffort"],
+    vals: { authenticity:10, fulfillment:9, emotionalWeight:7, skillGrowth:7, audienceEffort:1 }
+  },
+  boardGameDesign: {
+    factors: ["empowerment","collaborativeJoy","originality","verifiability","fulfillment"],
+    vals: { empowerment:8, collaborativeJoy:8, originality:8, verifiability:7, fulfillment:8 }
   },
 };
 

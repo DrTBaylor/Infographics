@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Assisted Rubric Creation for Canvas LMS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f7f5f0;
+    --accent: #c45d3e;
+    --accent-light: #e8a590;
+    --teal: #2a7a6e;
+    --teal-light: #d0e8e4;
+    --muted: #6b6b7b;
+    --border: #d4d0c8;
+    --card-bg: #ffffff;
+    --step-bg: #faf9f6;
+    --shadow: 0 2px 20px rgba(26,26,46,0.08);
+    --shadow-lg: 0 8px 40px rgba(26,26,46,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    overflow-y: scroll;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 400;
+    line-height: 1.7;
+    font-size: 18px;
+  }
+
+  /* --- SLIDE SYSTEM --- */
+  .slide {
+    min-height: 100vh;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4rem 6rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (max-width: 900px) {
+    .slide { padding: 2.5rem 2rem; }
+  }
+
+  /* --- NAV --- */
+  .nav {
+    position: fixed;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .nav a {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--border);
+    display: block;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .nav a:hover, .nav a.active {
+    background: var(--accent);
+    transform: scale(1.4);
+  }
+
+  .nav a .tooltip {
+    position: absolute;
+    right: 26px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--ink);
+    color: white;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .nav a:hover .tooltip { opacity: 1; }
+
+  /* --- TITLE SLIDE --- */
+  .slide-title {
+    background: var(--ink);
+    color: var(--paper);
+    position: relative;
+  }
+
+  .slide-title::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 70%;
+    height: 200%;
+    background: radial-gradient(ellipse, rgba(196,93,62,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .slide-title::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 50%;
+    height: 150%;
+    background: radial-gradient(ellipse, rgba(42,122,110,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .title-content {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+  }
+
+  .title-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-light);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.3s forwards;
+  }
+
+  .title-main {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(3rem, 5.5vw, 5rem);
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.5s forwards;
+  }
+
+  .title-main em {
+    color: var(--accent-light);
+    font-style: italic;
+  }
+
+  .title-sub {
+    font-size: 1.3rem;
+    font-weight: 300;
+    color: rgba(247,245,240,0.65);
+    max-width: 700px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.7s forwards;
+  }
+
+  .title-meta {
+    margin-top: 3rem;
+    display: flex;
+    gap: 2rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.95rem;
+    color: rgba(247,245,240,0.4);
+    opacity: 0;
+    animation: fadeUp 0.6s 0.9s forwards;
+  }
+
+  /* --- MOTIVATION SLIDE --- */
+  .slide-motivation {
+    background: var(--ink);
+    color: var(--paper);
+    position: relative;
+  }
+
+  .slide-motivation::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -15%;
+    width: 60%;
+    height: 160%;
+    background: radial-gradient(ellipse, rgba(42,122,110,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .motivation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    max-width: 1100px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 900px) {
+    .motivation-grid { grid-template-columns: 1fr; gap: 2rem; }
+  }
+
+  .motivation-text h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.8rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    color: var(--paper);
+  }
+
+  .motivation-text h2 span { color: var(--accent-light); }
+
+  .motivation-text p {
+    color: rgba(247,245,240,0.65);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    line-height: 1.8;
+  }
+
+  .pain-points {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .pain-point {
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1.15rem 1.4rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    box-shadow: none;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(4px);
+  }
+
+  .pain-point:hover {
+    border-color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.1);
+  }
+
+  .pain-point.active {
+    background: var(--paper);
+    border-color: var(--paper);
+    box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+    padding: 1.6rem 1.6rem;
+  }
+
+  .pain-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    transition: all 0.4s ease;
+  }
+
+  .pain-point.active .pain-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 1.6rem;
+  }
+
+  .pain-icon.time { background: #fce4ec; }
+  .pain-icon.consistency { background: #e8eaf6; }
+  .pain-icon.feedback { background: #e0f2f1; }
+
+  .pain-point h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    transition: all 0.3s ease;
+    color: var(--paper);
+  }
+
+  .pain-point.active h4 {
+    color: var(--ink);
+    font-size: 1.25rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .pain-point .pain-summary {
+    font-size: 0.95rem;
+    color: rgba(247,245,240,0.55);
+    line-height: 1.6;
+    margin: 0;
+    transition: color 0.3s ease;
+  }
+
+  .pain-point.active .pain-summary {
+    color: var(--muted);
+  }
+
+  .pain-point .pain-expanded {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease;
+    margin-top: 0;
+  }
+
+  .pain-point.active .pain-expanded {
+    max-height: 200px;
+    opacity: 1;
+    margin-top: 0.75rem;
+  }
+
+  .pain-expanded-inner {
+    font-size: 1.02rem;
+    line-height: 1.7;
+    color: var(--muted);
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .pain-expanded-inner strong {
+    color: var(--accent);
+  }
+
+  /* --- OVERVIEW SLIDE --- */
+  .slide-overview {
+    background: var(--paper);
+    justify-content: flex-start;
+    padding-top: 6vh;
+  }
+
+  .overview-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .overview-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .overview-header p {
+    color: var(--muted);
+    font-size: 1.15rem;
+  }
+
+  .pipeline {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .pipe-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: flex 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 0;
+  }
+
+  .pipe-step.active {
+    flex: 3;
+  }
+
+  .pipe-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+    border: 2px solid var(--border);
+  }
+
+  .pipe-step:hover .pipe-top {
+    border-color: var(--accent-light);
+    box-shadow: var(--shadow);
+  }
+
+  .pipe-step.active .pipe-top {
+    background: var(--ink);
+    border-color: var(--ink);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .pipe-num {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pipe-step.active .pipe-num {
+    width: 64px;
+    height: 64px;
+    font-size: 1.7rem;
+    background: var(--accent);
+  }
+
+  .pipe-label-wrap {
+    text-align: left;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .pipe-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+
+  .pipe-step.active .pipe-label {
+    color: var(--paper);
+    font-size: 1.05rem;
+    white-space: normal;
+  }
+
+  .pipe-sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+
+  .pipe-step.active .pipe-sub {
+    color: rgba(247,245,240,0.5);
+  }
+
+  .pipe-detail {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, padding 0.4s ease;
+    opacity: 0;
+    background: var(--card-bg);
+    border-radius: 0 0 12px 12px;
+    margin-top: -2px;
+    border: 2px solid transparent;
+    padding: 0 1.25rem;
+  }
+
+  .pipe-step.active .pipe-detail {
+    max-height: 500px;
+    opacity: 1;
+    border-color: var(--ink);
+    border-top: none;
+    padding: 1.25rem;
+  }
+
+  .pipe-step.show-tip .pipe-detail {
+    max-height: 700px;
+  }
+
+  .pipe-detail-inner {
+    text-align: left;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  .pipe-detail-inner p {
+    margin-bottom: 0.6rem;
+    color: var(--muted);
+  }
+
+  .pipe-detail-inner strong {
+    color: var(--ink);
+  }
+
+  .pipe-detail-inner .detail-tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 0.5rem;
+  }
+
+  .pipe-detail-inner .tag-tools { background: #e8eaf6; color: #3949ab; }
+  .pipe-detail-inner .tag-warning { background: #fff3e0; color: #e65100; }
+  .pipe-detail-inner .tag-key { background: var(--teal-light); color: var(--teal); }
+
+  .mikes-tip {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, margin 0.3s ease, padding 0.3s ease;
+    background: linear-gradient(135deg, #2a7a6e, #1e5f55);
+    border-radius: 8px;
+    margin-top: 0;
+    padding: 0 1rem;
+  }
+
+  .pipe-step.show-tip .mikes-tip {
+    max-height: 250px;
+    opacity: 1;
+    margin-top: 0.75rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .mikes-tip-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .mikes-tip-label::before {
+    content: '💡';
+    font-size: 1rem;
+  }
+
+  .mikes-tip-text {
+    font-size: 1rem;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.92);
+    text-align: left;
+  }
+
+  .mikes-tip-text strong {
+    color: #fff;
+  }
+
+  .pipe-connector {
+    position: absolute;
+    top: 38px;
+    right: -0.5rem;
+    width: 0.75rem;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+
+  .pipe-step:last-child .pipe-connector { display: none; }
+
+  .click-hint {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-top: 1.5rem;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 900px) {
+    .pipeline { flex-direction: column; gap: 0.5rem; }
+    .pipe-step, .pipe-step.active { flex: none; }
+    .pipe-connector { display: none; }
+    .pipe-top { justify-content: flex-start; }
+  }
+
+  /* --- STEP SLIDES --- */
+  .slide-step {
+    background: var(--step-bg);
+  }
+
+  .step-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 4rem;
+    max-width: 1100px;
+    align-items: center;
+  }
+
+  @media (max-width: 900px) {
+    .step-layout { grid-template-columns: 1fr; gap: 2rem; }
+  }
+
+  .step-info .step-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+  }
+
+  .step-info h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .step-info p {
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 1rem;
+  }
+
+  .step-visual {
+    background: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+
+  .visual-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.7rem 1.1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .visual-header .dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .visual-header .dots span {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+  }
+
+  .visual-header .dots span:first-child { background: #ff5f57; }
+  .visual-header .dots span:nth-child(2) { background: #ffbd2e; }
+  .visual-header .dots span:nth-child(3) { background: #28c840; }
+
+  .visual-body {
+    padding: 1.6rem;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .prompt-block {
+    background: #f0ede6;
+    border-left: 3px solid var(--accent);
+    padding: 1.1rem 1.4rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .tag-ai { background: #e8eaf6; color: #3949ab; }
+  .tag-manual { background: #fff3e0; color: #e65100; }
+  .tag-canvas { background: #e0f2f1; color: #00695c; }
+  .tag-import { background: #fce4ec; color: #c62828; }
+
+  .tip-box {
+    background: var(--teal-light);
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    font-size: 0.95rem;
+    color: var(--teal);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .tip-box .tip-icon { font-size: 1.15rem; flex-shrink: 0; }
+
+  .key-points {
+    margin-top: 1.25rem;
+  }
+
+  .key-point {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+    font-size: 1.02rem;
+  }
+
+  .key-point .bullet {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 0.55rem;
+  }
+
+  /* --- CSV PREVIEW --- */
+  .csv-preview {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    overflow-x: auto;
+  }
+
+  .csv-preview table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .csv-preview th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .csv-preview td {
+    padding: 0.5rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .csv-preview tr:nth-child(even) td { background: #faf9f6; }
+
+  /* --- TAKEAWAY SLIDE --- */
+  .slide-takeaway {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .slide-takeaway::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(42,122,110,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 30%, rgba(196,93,62,0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .takeaway-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+  }
+
+  .takeaway-content h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.8rem;
+    margin-bottom: 2rem;
+  }
+
+  .takeaway-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  @media (max-width: 900px) {
+    .takeaway-grid { grid-template-columns: 1fr; }
+  }
+
+  .takeaway-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1.6rem;
+    backdrop-filter: blur(4px);
+  }
+
+  .takeaway-card h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--accent-light);
+  }
+
+  .takeaway-card p {
+    font-size: 1.02rem;
+    color: rgba(247,245,240,0.6);
+    line-height: 1.6;
+  }
+
+  .closing-note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    color: rgba(247,245,240,0.4);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 1.5rem;
+  }
+
+  /* --- REVIEW SLIDE --- */
+  .slide-review {
+    background: var(--ink);
+    color: var(--paper);
+    position: relative;
+  }
+
+  .slide-review::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(ellipse at 70% 20%, rgba(196,93,62,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 30% 80%, rgba(42,122,110,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .review-content {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    width: 100%;
+  }
+
+  .review-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .review-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.6rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .review-header p {
+    color: rgba(247,245,240,0.45);
+    font-size: 1.1rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .review-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .review-step {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.1rem 1.4rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .review-step:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .review-step.checked {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(42,122,110,0.5);
+  }
+
+  .review-num {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.1);
+    color: rgba(247,245,240,0.6);
+    transition: all 0.35s ease;
+  }
+
+  .review-step.checked .review-num {
+    background: var(--teal);
+    color: white;
+  }
+
+  .review-num .num-text {
+    transition: opacity 0.2s;
+  }
+
+  .review-step.checked .review-num .num-text {
+    display: none;
+  }
+
+  .review-num .check-mark {
+    display: none;
+    font-size: 1.3rem;
+  }
+
+  .review-step.checked .review-num .check-mark {
+    display: block;
+  }
+
+  .review-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .review-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--paper);
+    margin-bottom: 0.15rem;
+    transition: color 0.3s;
+  }
+
+  .review-desc {
+    font-size: 0.95rem;
+    color: rgba(247,245,240,0.45);
+    line-height: 1.5;
+    transition: color 0.3s;
+  }
+
+  .review-step.checked .review-desc {
+    color: rgba(247,245,240,0.6);
+  }
+
+  .review-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: opacity 0.3s;
+  }
+
+  .review-badge.gotcha {
+    background: rgba(230,81,0,0.2);
+    color: #ffab91;
+  }
+
+  .review-badge.ai {
+    background: rgba(57,73,171,0.2);
+    color: #9fa8da;
+  }
+
+  .review-progress {
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .review-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .review-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, var(--teal), var(--accent-light));
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .review-bar-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: rgba(247,245,240,0.4);
+    min-width: 3rem;
+    text-align: right;
+    transition: color 0.3s;
+  }
+
+  .review-bar-label.complete {
+    color: var(--teal);
+  }
+
+  /* --- ANIMATIONS --- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+
+  /* --- CHECKLIST STYLE --- */
+  .checklist {
+    margin-top: 0.75rem;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .check-icon {
+    color: var(--teal);
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* --- ARROW CONNECTOR --- */
+  .arrow-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0.75rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .arrow-label::before {
+    content: '→';
+    color: var(--accent);
+    font-weight: bold;
+  }
+
+  /* Keyboard hint */
+  .kb-hint {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: rgba(107,107,123,0.5);
+    z-index: 100;
+    animation: fadeOut 4s 3s forwards;
+  }
+
+  @keyframes fadeOut {
+    to { opacity: 0; }
+  }
+
+  .highlight { color: var(--accent); font-weight: 500; }
+
+  /* --- SHARE URL BADGE --- */
+  .share-badge {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 2rem;
+    z-index: 100;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    background: rgba(26,26,46,0.75);
+    color: rgba(247,245,240,0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+  }
+
+  .share-badge:hover {
+    background: rgba(26,26,46,0.92);
+    color: var(--paper);
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .share-badge a {
+    color: var(--accent-light);
+    text-decoration: none;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .share-badge a:hover {
+    text-decoration: underline;
+  }
+
+  .share-badge .share-icon {
+    font-size: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- SHARE BADGE -->
+<div class="share-badge">
+  <span class="share-icon">📎</span>
+  <span>Get this presentation:</span>
+  <a href="https://drtlinks.org/ai-rubric-canvas.html" target="_blank">drtlinks.org/ai-rubric-canvas.html</a>
+</div>
+
+<!-- NAV DOTS -->
+<nav class="nav" id="nav">
+  <a href="#title"><span class="tooltip">Title</span></a>
+  <a href="#motivation"><span class="tooltip">Why</span></a>
+  <a href="#overview"><span class="tooltip">Overview</span></a>
+  <a href="#step1"><span class="tooltip">Step 1</span></a>
+  <a href="#step2"><span class="tooltip">Step 2</span></a>
+  <a href="#step3"><span class="tooltip">Step 3</span></a>
+  <a href="#step4"><span class="tooltip">Step 4</span></a>
+  <a href="#step5"><span class="tooltip">Step 5</span></a>
+  <a href="#review"><span class="tooltip">Review</span></a>
+  <a href="#takeaway"><span class="tooltip">Takeaway</span></a>
+</nav>
+
+<div class="kb-hint">Scroll or use ↑↓ to navigate</div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<section class="slide slide-title" id="title">
+  <div class="title-content">
+    <div class="title-eyebrow">Canvas LMS Workshop</div>
+    <h1 class="title-main">
+      Using AI to Build<br>
+      <em>Better Rubrics, Faster</em>
+    </h1>
+    <p class="title-sub">
+      A five-step workflow for generating, refining, and importing rubrics into Canvas — leveraging LLMs to improve grading efficiency, consistency, and SpeedGrader integration. Customizable to any discipline.
+    </p>
+    <div class="title-meta">
+      <span>Michael Thompson</span>
+      <span>Professor, Electrical &amp; Computer Engineering</span>
+      <span>Baylor University</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 2: MOTIVATION ==================== -->
+<section class="slide slide-motivation" id="motivation">
+  <div class="motivation-grid">
+    <div class="motivation-text reveal">
+      <h2>Why <span>AI-Assisted</span> Rubrics?</h2>
+      <p>
+        Well-structured rubrics are essential for consistent, transparent grading — and most disciplines have their own standards and accreditation frameworks that demand documented assessment evidence. Canvas rubrics unlock SpeedGrader's full potential while generating data for continuous improvement, yet the manual setup discourages adoption.
+      </p>
+      <p>
+        LLMs can accelerate rubric development from hours to minutes, while the human expert stays in the loop for quality and alignment with <em style="color: var(--accent-light);">your discipline's</em> learning outcomes and standards.
+      </p>
+    </div>
+    <div class="pain-points">
+      <div class="pain-point reveal reveal-delay-1" onclick="togglePain(this)">
+        <div class="pain-icon time">⏱</div>
+        <div>
+          <h4>Time Investment</h4>
+          <p class="pain-summary">Building detailed rubrics with clear descriptors for every criterion and level is a significant time commitment per assignment.</p>
+          <div class="pain-expanded">
+            <div class="pain-expanded-inner">
+              A 5-criterion rubric with 5 performance levels means writing <strong>25 unique descriptors</strong> — each needing to be specific and measurable. An LLM generates a solid first draft in under a minute, letting you invest your time in refinement instead of blank-page writing.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pain-point reveal reveal-delay-2" onclick="togglePain(this)">
+        <div class="pain-icon consistency">⚖</div>
+        <div>
+          <h4>Grading Consistency</h4>
+          <p class="pain-summary">Without rubrics in SpeedGrader, grading relies on mental models that drift across students and sessions.</p>
+          <div class="pain-expanded">
+            <div class="pain-expanded-inner">
+              Research shows grading drift increases with fatigue and batch size. A rubric with <strong>clickable performance levels</strong> in SpeedGrader forces structured evaluation — the same standard applied to student 1 and student 85.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pain-point reveal reveal-delay-3" onclick="togglePain(this)">
+        <div class="pain-icon feedback">💬</div>
+        <div>
+          <h4>Feedback Quality</h4>
+          <p class="pain-summary">Rubric-linked feedback gives students specific, actionable information tied to clearly defined performance levels.</p>
+          <div class="pain-expanded">
+            <div class="pain-expanded-inner">
+              Students see <strong>exactly which level they hit</strong> on each criterion and what would move them up. This replaces vague margin comments with structured feedback tied to observable behaviors — far more useful for improvement.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pain-point reveal reveal-delay-4" onclick="togglePain(this)">
+        <div class="pain-icon" style="background: #e8f5e9;">📊</div>
+        <div>
+          <h4>Accreditation &amp; Assessment</h4>
+          <p class="pain-summary">Rubrics aligned to your discipline's standards produce structured assessment data for accreditation and continuous improvement.</p>
+          <div class="pain-expanded">
+            <div class="pain-expanded-inner">
+              In engineering, I map criteria to <strong>ABET Student Outcomes</strong> with a five-level expectations scale — every graded assignment becomes accreditation evidence. Nursing might align to AACN essentials, business to AACSB goals. <strong>Customize the scale and criteria to your framework.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 3: OVERVIEW ==================== -->
+<section class="slide slide-overview" id="overview">
+  <div class="overview-header reveal">
+    <h2>The Five-Step Workflow</h2>
+    <p>From prompt to published rubric in Canvas</p>
+  </div>
+  <div class="pipeline reveal reveal-delay-2">
+
+    <div class="pipe-step" data-step="1" onclick="toggleStep(this)">
+      <div class="pipe-top">
+        <div class="pipe-num">1</div>
+        <div class="pipe-label-wrap">
+          <div class="pipe-label">Generate Rubric</div>
+          <div class="pipe-sub">LLM Prompt</div>
+        </div>
+      </div>
+      <div class="pipe-detail">
+        <div class="pipe-detail-inner">
+          <span class="detail-tag tag-tools">AI-Powered</span>
+          <p>Prompt the LLM with your assignment description, your discipline's learning outcomes or accreditation standards, and your preferred performance scale. Ask for measurable, observable descriptors. For example, in engineering I use ABET Student Outcomes and a five-level expectations scale.</p>
+          <strong>Key: </strong><span style="color: var(--muted);">The more specific your prompt, the less refinement needed.</span>
+        </div>
+        <div class="mikes-tip">
+          <div class="mikes-tip-label">Mike's Tip</div>
+          <div class="mikes-tip-text">Actually, <strong>attaching the assignment file with minimal prompting can work pretty well.</strong> You don't always need an elaborate prompt — the LLM can infer a lot from the assignment itself.</div>
+        </div>
+      </div>
+      <div class="pipe-connector"></div>
+    </div>
+
+    <div class="pipe-step" data-step="2" onclick="toggleStep(this)">
+      <div class="pipe-top">
+        <div class="pipe-num">2</div>
+        <div class="pipe-label-wrap">
+          <div class="pipe-label">Refine &amp; Edit</div>
+          <div class="pipe-sub">Human + AI</div>
+        </div>
+      </div>
+      <div class="pipe-detail">
+        <div class="pipe-detail-inner">
+          <span class="detail-tag tag-tools">AI-Powered</span>
+          <span class="detail-tag tag-key" style="margin-left: 0.25rem;">Expert Review</span>
+          <p>Review each descriptor for alignment with your actual grading standards and disciplinary expectations. Edit manually or use targeted follow-up prompts. Verify adjacent levels are clearly distinguishable — especially around the pass/fail boundary in your scale.</p>
+          <strong>Key: </strong><span style="color: var(--muted);">This is where domain expertise is irreplaceable.</span>
+        </div>
+        <div class="mikes-tip">
+          <div class="mikes-tip-label">Mike's Tip</div>
+          <div class="mikes-tip-text">Use your LLM's <strong>fine-grain editing features.</strong> Ask the LLM to evaluate and improve the rubric — it's great at spotting vague descriptors and suggesting more measurable language.</div>
+        </div>
+      </div>
+      <div class="pipe-connector"></div>
+    </div>
+
+    <div class="pipe-step" data-step="3" onclick="toggleStep(this)">
+      <div class="pipe-top">
+        <div class="pipe-num">3</div>
+        <div class="pipe-label-wrap">
+          <div class="pipe-label">Enable &amp; Template</div>
+          <div class="pipe-sub">Feature + CSV</div>
+        </div>
+      </div>
+      <div class="pipe-detail">
+        <div class="pipe-detail-inner">
+          <span class="detail-tag tag-warning">⚠ Gotcha</span>
+          <p>First enable <strong>Enhanced Rubrics</strong> in Canvas: Settings → Feature Options → Enhanced Rubrics. Without this, import/export won't appear. Then navigate to Rubrics and download the blank CSV template.</p>
+          <strong>Key: </strong><span style="color: var(--muted);">Canvas menus change — ask AI for help navigating if needed.</span>
+        </div>
+        <div class="mikes-tip">
+          <div class="mikes-tip-label">Mike's Tip</div>
+          <div class="mikes-tip-text">This is the <strong>first "gotcha"</strong> — it's easy to forget. If you don't see import/export options for rubrics, this is almost certainly why.</div>
+        </div>
+      </div>
+      <div class="pipe-connector"></div>
+    </div>
+
+    <div class="pipe-step" data-step="4" onclick="toggleStep(this)">
+      <div class="pipe-top">
+        <div class="pipe-num">4</div>
+        <div class="pipe-label-wrap">
+          <div class="pipe-label">Populate Template</div>
+          <div class="pipe-sub">LLM + Cleanup</div>
+        </div>
+      </div>
+      <div class="pipe-detail">
+        <div class="pipe-detail-inner">
+          <span class="detail-tag tag-tools">AI-Powered</span>
+          <span class="detail-tag tag-warning" style="margin-left: 0.25rem;">Most Failure-Prone</span>
+          <p>Prompt the LLM to map your rubric into the CSV template's exact structure. Then <strong>remove non-printing characters</strong> (curly quotes, BOM), verify column alignment, and check point totals. Open in a plain text editor before importing.</p>
+          <strong>Key: </strong><span style="color: var(--muted);">Non-printing characters are the #1 cause of import errors.</span>
+        </div>
+        <div class="mikes-tip">
+          <div class="mikes-tip-label">Mike's Tip</div>
+          <div class="mikes-tip-text">The <strong>second "gotcha"</strong> — if you forget this cleanup step and get an import error, <strong>take a screenshot of the error, put it back in the LLM, and try again.</strong> The AI is usually good at diagnosing CSV formatting issues from the error message.</div>
+        </div>
+      </div>
+      <div class="pipe-connector"></div>
+    </div>
+
+    <div class="pipe-step" data-step="5" onclick="toggleStep(this)">
+      <div class="pipe-top">
+        <div class="pipe-num">5</div>
+        <div class="pipe-label-wrap">
+          <div class="pipe-label">Import &amp; Finalize</div>
+          <div class="pipe-sub">Canvas LMS</div>
+        </div>
+      </div>
+      <div class="pipe-detail">
+        <div class="pipe-detail-inner">
+          <span class="detail-tag tag-key">Canvas</span>
+          <p>Upload the CSV via Canvas rubric import. <strong>You must edit and save the rubric</strong> — imported rubrics stay in "draft" and won't attach to assignments until edited. Then attach to your assignment and test in SpeedGrader.</p>
+          <strong>Key: </strong><span style="color: var(--muted);">Once finalized, duplicate and reuse across courses and semesters.</span>
+        </div>
+        <div class="mikes-tip">
+          <div class="mikes-tip-label">Mike's Tip</div>
+          <div class="mikes-tip-text">The <strong>third "gotcha"</strong> — if you can't find your rubric when trying to attach it to an assignment, it's probably still marked "draft." Open it, <strong>make a trivial edit, and save.</strong> That takes it out of draft status.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="click-hint reveal reveal-delay-3">Click a step to expand · click again for Mike's Tip</div>
+</section>
+
+<!-- ==================== SLIDE 4: STEP 1 ==================== -->
+<section class="slide slide-step" id="step1">
+  <div class="step-layout">
+    <div class="step-info reveal">
+      <div class="step-number">Step 01 &mdash; Generate</div>
+      <h2>Prompt the LLM to Draft Your Rubric</h2>
+      <p>
+        Start by giving the LLM the context it needs: the assignment description, your discipline's learning outcomes or accreditation standards, desired criteria, and your preferred performance scale. The key is to customize the prompt to your field — the LLM can work with any framework you give it.
+      </p>
+      <div class="key-points">
+        <div class="key-point"><div class="bullet"></div><span>Map criteria to your discipline's standards (e.g., ABET SOs for engineering, AACN for nursing, AACSB for business)</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Define your performance scale — in ECE, I use: <strong>Well Below / Below / Meets / Above / Well Above Expectations</strong></span></div>
+        <div class="key-point"><div class="bullet"></div><span>Request measurable, observable descriptors — avoid vague adjectives</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Define your anchor level first (e.g., "Meets Expectations") — other levels are deviations from it</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Include the assignment prompt and any relevant course learning objectives</span></div>
+      </div>
+      <div class="tip-box">
+        <span class="tip-icon">💡</span>
+        <span>Ask the LLM to produce a table format and to define your anchor level first — it grounds the rubric and makes adjacent levels easier to differentiate.</span>
+      </div>
+    </div>
+    <div class="step-visual reveal reveal-delay-2">
+      <div class="visual-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span style="margin-left: auto;">prompt.txt</span>
+      </div>
+      <div class="visual-body">
+        <div style="font-size: 1.02rem; font-family: 'IBM Plex Mono', monospace; color: var(--accent); margin-bottom: 0.6rem; font-weight: 500;">▸ EXAMPLE — Engineering (ABET-aligned)</div>
+        <div class="prompt-block">
+          Create a grading rubric for a <strong>digital logic lab report</strong> assignment following ABET assessment best practices. This assignment assesses <strong>ABET Student Outcome 6</strong> (experimentation/analysis) and <strong>SO 1</strong> (complex problem solving).<br><br>
+          The rubric should have <strong>5 criteria</strong>: Circuit Design, Simulation Results, Timing Analysis, Written Explanation, and Code Quality.<br><br>
+          Use the <strong>five-level ABET-aligned scale</strong>: Well Below Expectations, Below Expectations, Meets Expectations, Above Expectations, Well Above Expectations.<br><br>
+          <strong>Define "Meets Expectations" first</strong> as the baseline for each criterion — it should describe competent, acceptable performance. Then define the other levels as deviations. Each descriptor must be <strong>specific, measurable, and observable</strong> — no vague adjectives like "good" or "adequate." The total rubric should be worth <strong>100 points</strong>.
+        </div>
+        <div style="font-size: 1.02rem; color: var(--muted); font-style: italic; margin-bottom: 0.5rem;">↑ This is my prompt for ECE — yours would reference your discipline's standards, outcomes, and scale.</div>
+        <div class="arrow-label">LLM generates discipline-aligned rubric table</div>
+        <div style="background: #f8f7f3; border-radius: 8px; padding: 0.75rem; font-family: 'IBM Plex Mono', monospace; font-size: 1.02rem; color: var(--muted);">
+          <strong style="color: var(--ink);">Circuit Design (25 pts) — SO 1</strong><br>
+          Meets Expectations: Design is functionally correct for all specified inputs; uses appropriate components with no unnecessary logic…<br>
+          Above Expectations: Meets all baseline criteria and demonstrates optimization such as reduced gate count or propagation delay…
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 5: STEP 2 ==================== -->
+<section class="slide slide-step" id="step2">
+  <div class="step-layout">
+    <div class="step-info reveal">
+      <div class="step-number">Step 02 &mdash; Refine</div>
+      <h2>Edit with Human Judgment &amp; AI Assistance</h2>
+      <p>
+        The LLM draft is a starting point. Review each criterion and descriptor for alignment with your actual expectations. You can edit manually or use follow-up prompts to adjust specific cells.
+      </p>
+      <div class="key-points">
+        <div class="key-point"><div class="bullet"></div><span>Verify descriptors match your actual grading standards</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Confirm each criterion maps to a specific learning outcome or accreditation standard</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Ensure adjacent levels are clearly distinguishable — especially around the pass/fail boundary in your scale</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Adjust point weightings to reflect priorities</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Use AI follow-up prompts for targeted revisions</span></div>
+      </div>
+      <div class="tip-box">
+        <span class="tip-icon">💡</span>
+        <span>Try: "Make the distinction between Meets Expectations and Below Expectations clearer for the Timing Analysis criterion" — targeted edits are faster than rewriting.</span>
+      </div>
+    </div>
+    <div class="step-visual reveal reveal-delay-2">
+      <div class="visual-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span style="margin-left: auto;">refinement</span>
+      </div>
+      <div class="visual-body">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+          <span class="tag tag-manual">Manual Edit</span>
+          <span class="tag tag-ai">AI Assist</span>
+        </div>
+        <div style="background: #fff3e0; border-radius: 8px; padding: 0.75rem; font-size: 1.1rem; margin-bottom: 0.75rem; border-left: 3px solid #e65100;">
+          <strong>Manual:</strong> Change "Code Quality" weight from 15 → 20 pts. Reduce "Written Explanation" from 20 → 15 pts to compensate.
+        </div>
+        <div style="background: #e8eaf6; border-radius: 8px; padding: 0.75rem; font-size: 1.1rem; border-left: 3px solid #3949ab;">
+          <strong>AI Prompt:</strong> "The 'Below Expectations' level for Simulation Results is too vague. Rewrite it to specify that fewer than 60% of test cases produce correct waveforms, with no documentation of discrepancies."
+        </div>
+        <div class="arrow-label">Iterate until rubric matches your expectations</div>
+        <div style="font-size: 0.92rem; color: var(--muted); font-style: italic;">
+          This is where your domain expertise matters most — the AI accelerates, you validate.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 6: STEP 3 ==================== -->
+<section class="slide slide-step" id="step3">
+  <div class="step-layout">
+    <div class="step-info reveal">
+      <div class="step-number">Step 03 &mdash; Template</div>
+      <h2>Enable Enhanced Rubrics &amp; Download the CSV Template</h2>
+      <p>
+        Canvas doesn't have rubric import/export enabled by default. You need to flip one switch first, then you can go straight to downloading the blank CSV template.
+      </p>
+      <div style="background: #fff3e0; border: 2px solid #e65100; border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+        <span style="font-size: 1.4rem; flex-shrink: 0;">⚠️</span>
+        <div>
+          <div style="font-weight: 700; font-size: 1.1rem; color: #e65100; margin-bottom: 0.3rem;">Gotcha — Enable Enhanced Rubrics First</div>
+          <div style="font-size: 1.02rem; line-height: 1.6;">Go to <strong>Settings → Feature Options → Enhanced Rubrics</strong> and toggle it on. Without this, you won't see the import/export options. This is easy to miss.</div>
+        </div>
+      </div>
+      <div class="key-points">
+        <div class="key-point"><div class="bullet"></div><span>Enable Enhanced Rubrics in Feature Options (one-time setup)</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Navigate to Rubrics and download the blank CSV template directly</span></div>
+        <div class="key-point"><div class="bullet"></div><span>The template defines the exact column structure and formatting Canvas expects</span></div>
+      </div>
+      <div class="tip-box">
+        <span class="tip-icon">💡</span>
+        <span>Canvas menus change frequently. If you can't find a setting where you expect it, ask an AI — describe what you're looking for and it can walk you through the current UI.</span>
+      </div>
+    </div>
+    <div class="step-visual reveal reveal-delay-2">
+      <div class="visual-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span style="margin-left: auto;">rubric_template.csv</span>
+      </div>
+      <div class="visual-body">
+        <div style="background: #fff3e0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; color: #e65100; font-weight: 600; margin-bottom: 0.5rem;">📍 STEP A — ENABLE THE FEATURE</div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; font-family: 'IBM Plex Mono', monospace; font-size: 1.1rem; flex-wrap: wrap;">
+            <span style="background: var(--ink); color: var(--paper); padding: 0.3rem 0.6rem; border-radius: 5px;">Settings</span>
+            <span style="color: var(--accent);">→</span>
+            <span style="background: var(--ink); color: var(--paper); padding: 0.3rem 0.6rem; border-radius: 5px;">Feature Options</span>
+            <span style="color: var(--accent);">→</span>
+            <span style="background: #e65100; color: white; padding: 0.3rem 0.6rem; border-radius: 5px;">Enhanced Rubrics ✓</span>
+          </div>
+        </div>
+        <div style="background: #e0f2f1; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; color: #00695c; font-weight: 600; margin-bottom: 0.5rem;">📍 STEP B — DOWNLOAD THE TEMPLATE</div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; font-family: 'IBM Plex Mono', monospace; font-size: 1.1rem; flex-wrap: wrap;">
+            <span style="background: var(--ink); color: var(--paper); padding: 0.3rem 0.6rem; border-radius: 5px;">Rubrics</span>
+            <span style="color: var(--accent);">→</span>
+            <span style="background: var(--teal); color: white; padding: 0.3rem 0.6rem; border-radius: 5px;">Download CSV Template ↓</span>
+          </div>
+        </div>
+        <div class="arrow-label">Template defines the exact format Canvas expects</div>
+        <div class="csv-preview">
+        <table>
+          <thead>
+            <tr>
+              <th>Rubric Name</th>
+              <th>Criteria Name</th>
+              <th>Criteria Desc</th>
+              <th>Rating Name</th>
+              <th>Rating Desc</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Lab Report Rubric</td>
+              <td>Circuit Design</td>
+              <td>SO 1</td>
+              <td>Well Above Expectations</td>
+              <td>(descriptor)</td>
+              <td>25</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>Above Expectations</td>
+              <td>(descriptor)</td>
+              <td>22</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>Meets Expectations</td>
+              <td>(descriptor)</td>
+              <td>19</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>Below Expectations</td>
+              <td>(descriptor)</td>
+              <td>15</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>Well Below Expectations</td>
+              <td>(descriptor)</td>
+              <td>10</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>Simulation Results</td>
+              <td>SO 6</td>
+              <td>Well Above Expectations</td>
+              <td>(descriptor)</td>
+              <td>20</td>
+            </tr>
+            <tr>
+              <td style="color: var(--muted);">…</td>
+              <td style="color: var(--muted);">…</td>
+              <td style="color: var(--muted);">…</td>
+              <td style="color: var(--muted);">…</td>
+              <td style="color: var(--muted);">…</td>
+              <td style="color: var(--muted);">…</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="arrow-label">Canvas-ready structure with exact column format</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 7: STEP 4 ==================== -->
+<section class="slide slide-step" id="step4">
+  <div class="step-layout">
+    <div class="step-info reveal">
+      <div class="step-number">Step 04 &mdash; Populate</div>
+      <h2>Integrate Rubric into the CSV Template</h2>
+      <p>
+        Use the LLM to map your refined rubric content into the downloaded template's exact structure. This step requires careful attention to detail — Canvas is particular about formatting.
+      </p>
+      <div class="key-points">
+        <div class="key-point"><div class="bullet"></div><span>Prompt the LLM with both the rubric and the template</span></div>
+        <div class="key-point"><div class="bullet"></div><span><strong class="highlight">Remove non-printing characters</strong> — curly quotes, BOM markers, hidden whitespace</span></div>
+        <div class="key-point"><div class="bullet"></div><span><strong class="highlight">Carefully check all template fields</strong> — column alignment, escaping, row structure</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Adjust rubric content if needed to fit template constraints</span></div>
+      </div>
+      <div class="tip-box">
+        <span class="tip-icon">⚠️</span>
+        <span>This is the most failure-prone step. Non-printing characters and misaligned fields are the #1 cause of import errors. Open the CSV in a plain text editor to verify before importing.</span>
+      </div>
+    </div>
+    <div class="step-visual reveal reveal-delay-2">
+      <div class="visual-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span style="margin-left: auto;">cleanup checklist</span>
+      </div>
+      <div class="visual-body">
+        <div class="prompt-block" style="margin-bottom: 0.75rem;">
+          Here is my rubric [paste rubric table] and here is the Canvas CSV template [paste template]. Please populate the template with my rubric content, preserving the exact column structure.
+        </div>
+        <div style="font-size: 0.97rem; font-weight: 600; margin-bottom: 0.5rem;">Critical Checks:</div>
+        <div class="checklist">
+          <div class="check-item"><span class="check-icon">✓</span><span>Straight quotes only — no curly/smart quotes (" not ")</span></div>
+          <div class="check-item"><span class="check-icon">✓</span><span>No BOM (byte order mark) at file start</span></div>
+          <div class="check-item"><span class="check-icon">✓</span><span>UTF-8 encoding, LF line endings</span></div>
+          <div class="check-item"><span class="check-icon">✓</span><span>Fields with commas are properly quoted</span></div>
+          <div class="check-item"><span class="check-icon">✓</span><span>No trailing whitespace or blank rows</span></div>
+          <div class="check-item"><span class="check-icon">✓</span><span>Point values match rubric total</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 8: STEP 5 ==================== -->
+<section class="slide slide-step" id="step5">
+  <div class="step-layout">
+    <div class="step-info reveal">
+      <div class="step-number">Step 05 &mdash; Import &amp; Finalize</div>
+      <h2>Import to Canvas, Edit, and Attach</h2>
+      <p>
+        Upload the populated CSV to Canvas, review the imported rubric for any formatting issues, make final adjustments, and attach it to the target assignment for use in SpeedGrader.
+      </p>
+      <div class="key-points">
+        <div class="key-point"><div class="bullet"></div><span>Import the CSV via Canvas rubric import</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Review every criterion and rating in the Canvas UI</span></div>
+        <div class="key-point"><div class="bullet"></div><span><strong class="highlight">Edit and save the rubric</strong> — imported rubrics stay in "draft" until edited and won't attach to assignments</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Attach rubric to the assignment</span></div>
+        <div class="key-point"><div class="bullet"></div><span>Test in SpeedGrader to verify grading workflow</span></div>
+      </div>
+      <div class="tip-box">
+        <span class="tip-icon">💡</span>
+        <span>Once imported, the rubric is a native Canvas object — you can duplicate it, modify it for future assignments, and share it across courses.</span>
+      </div>
+    </div>
+    <div class="step-visual reveal reveal-delay-2">
+      <div class="visual-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span style="margin-left: auto;">Canvas LMS</span>
+      </div>
+      <div class="visual-body">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+          <span class="tag tag-import">Import</span>
+          <span class="tag tag-canvas">Canvas</span>
+        </div>
+        <div style="background: #f8f7f3; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;">
+          <div style="font-size: 0.97rem; font-weight: 600; margin-bottom: 0.75rem;">Import → Review → Edit → Attach</div>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <div style="background: var(--ink); color: var(--paper); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.9rem;">Upload CSV</div>
+            <span style="color: var(--accent);">→</span>
+            <div style="background: var(--ink); color: var(--paper); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.9rem;">Verify Rubric</div>
+            <span style="color: var(--accent);">→</span>
+            <div style="background: #e65100; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.9rem;">Edit Required</div>
+            <span style="color: var(--accent);">→</span>
+            <div style="background: var(--ink); color: var(--paper); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.9rem;">Attach to Assignment</div>
+          </div>
+        </div>
+        <div style="background: #fff3e0; border-left: 3px solid #e65100; border-radius: 0 8px 8px 0; padding: 0.7rem 0.9rem; margin-bottom: 0.75rem; font-size: 1.1rem; line-height: 1.6; color: #bf360c;">
+          <strong>⚠ Gotcha:</strong> Imported rubrics remain in "draft" status until you edit and save them in Canvas. Draft rubrics <strong>will not attach</strong> to assignments. You must open the rubric, make at least one edit, and save to finalize it.
+        </div>
+        <div style="font-size: 1.1rem; color: var(--muted); line-height: 1.6;">
+          Once attached, the rubric appears in <strong>SpeedGrader</strong> as a clickable scoring grid. Select the performance level for each criterion — scores auto-calculate and feedback is linked to specific descriptors.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 9: REVIEW ==================== -->
+<section class="slide slide-review" id="review">
+  <div class="review-content reveal">
+    <div class="review-header">
+      <h2>The Process — Review</h2>
+      <p>Click each step as we recap</p>
+    </div>
+    <div class="review-steps">
+      <div class="review-step" onclick="toggleReview(this)">
+        <div class="review-num"><span class="num-text">1</span><span class="check-mark">✓</span></div>
+        <div class="review-text">
+          <div class="review-title">Generate Rubric</div>
+          <div class="review-desc">Prompt the LLM with your assignment, discipline standards, and performance scale</div>
+        </div>
+        <span class="review-badge ai">AI</span>
+      </div>
+      <div class="review-step" onclick="toggleReview(this)">
+        <div class="review-num"><span class="num-text">2</span><span class="check-mark">✓</span></div>
+        <div class="review-text">
+          <div class="review-title">Refine &amp; Edit</div>
+          <div class="review-desc">Human expertise validates — use targeted prompts or manual edits to sharpen descriptors</div>
+        </div>
+        <span class="review-badge ai">AI + Expert</span>
+      </div>
+      <div class="review-step" onclick="toggleReview(this)">
+        <div class="review-num"><span class="num-text">3</span><span class="check-mark">✓</span></div>
+        <div class="review-text">
+          <div class="review-title">Enable Enhanced Rubrics &amp; Download Template</div>
+          <div class="review-desc">Settings → Feature Options → Enhanced Rubrics, then download the blank CSV</div>
+        </div>
+        <span class="review-badge gotcha">Gotcha #1</span>
+      </div>
+      <div class="review-step" onclick="toggleReview(this)">
+        <div class="review-num"><span class="num-text">4</span><span class="check-mark">✓</span></div>
+        <div class="review-text">
+          <div class="review-title">Populate Template &amp; Clean Up</div>
+          <div class="review-desc">LLM fills the CSV — remove non-printing characters, verify in a plain text editor</div>
+        </div>
+        <span class="review-badge gotcha">Gotcha #2</span>
+      </div>
+      <div class="review-step" onclick="toggleReview(this)">
+        <div class="review-num"><span class="num-text">5</span><span class="check-mark">✓</span></div>
+        <div class="review-text">
+          <div class="review-title">Import, Edit, &amp; Attach</div>
+          <div class="review-desc">Upload CSV, make a trivial edit to exit "draft" status, attach to assignment</div>
+        </div>
+        <span class="review-badge gotcha">Gotcha #3</span>
+      </div>
+    </div>
+    <div class="review-progress">
+      <div class="review-bar"><div class="review-bar-fill" id="reviewBarFill"></div></div>
+      <div class="review-bar-label" id="reviewBarLabel">0 / 5</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SLIDE 10: TAKEAWAY ==================== -->
+<section class="slide slide-takeaway" id="takeaway">
+  <div class="takeaway-content reveal">
+    <h2>Key Takeaways</h2>
+    <div class="takeaway-grid">
+      <div class="takeaway-card reveal reveal-delay-1">
+        <h4>Speed Without Sacrifice</h4>
+        <p>LLMs handle the labor-intensive drafting. You invest your time where it matters — in aligning rubrics to your actual standards.</p>
+      </div>
+      <div class="takeaway-card reveal reveal-delay-2">
+        <h4>SpeedGrader Integration</h4>
+        <p>Canvas rubrics transform grading from open-ended evaluation to structured, clickable scoring — faster and more consistent.</p>
+      </div>
+      <div class="takeaway-card reveal reveal-delay-3">
+        <h4>Human in the Loop</h4>
+        <p>The AI accelerates; you validate. Steps 2 and 4 are where domain expertise is irreplaceable.</p>
+      </div>
+      <div class="takeaway-card reveal reveal-delay-4">
+        <h4>Customize to Your Discipline</h4>
+        <p>The workflow adapts to any framework — ABET, AACN, AACSB, or your own. Ground your prompts in your discipline's standards and the rubrics become assessment evidence, not just grading tools.</p>
+      </div>
+      <div class="takeaway-card reveal reveal-delay-5">
+        <h4>Watch the Details</h4>
+        <p>Non-printing characters and CSV formatting are the failure mode. A plain text editor check before import saves headaches.</p>
+      </div>
+    </div>
+    <div class="closing-note">
+      The rubric is a living document — iterate, reuse, and refine across semesters.
+    </div>
+  </div>
+</section>
+
+<script>
+  // Review step check-off
+  function toggleReview(el) {
+    el.classList.toggle('checked');
+    updateReviewProgress();
+  }
+
+  function updateReviewProgress() {
+    const total = document.querySelectorAll('.review-step').length;
+    const checked = document.querySelectorAll('.review-step.checked').length;
+    const pct = (checked / total) * 100;
+    document.getElementById('reviewBarFill').style.width = pct + '%';
+    const label = document.getElementById('reviewBarLabel');
+    label.textContent = checked + ' / ' + total;
+    label.classList.toggle('complete', checked === total);
+  }
+
+  // Pain point card toggle
+  function togglePain(el) {
+    const cards = document.querySelectorAll('.pain-point');
+    const wasActive = el.classList.contains('active');
+    cards.forEach(c => c.classList.remove('active'));
+    if (!wasActive) {
+      el.classList.add('active');
+    }
+  }
+
+  // Pipeline step toggle
+  // Pipeline step toggle — two-click animation
+  // Click 1: expand detail | Click 2: reveal Mike's Tip | Click 3 (or different step): collapse
+  function toggleStep(el) {
+    const steps = document.querySelectorAll('.pipe-step');
+    const isActive = el.classList.contains('active');
+    const showingTip = el.classList.contains('show-tip');
+
+    if (isActive && !showingTip) {
+      // Second click on same step — show Mike's Tip
+      el.classList.add('show-tip');
+    } else if (isActive && showingTip) {
+      // Third click — collapse everything
+      el.classList.remove('active', 'show-tip');
+    } else {
+      // First click on a new step — collapse all others, expand this one
+      steps.forEach(s => s.classList.remove('active', 'show-tip'));
+      el.classList.add('active');
+    }
+
+    // Hide the hint after first interaction
+    const hint = document.querySelector('.click-hint');
+    if (hint) hint.style.opacity = '0';
+  }
+
+  // Intersection Observer for reveal animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Nav dot active state
+  const navLinks = document.querySelectorAll('.nav a');
+  const sections = document.querySelectorAll('.slide');
+
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+        });
+      }
+    });
+  }, { threshold: 0.5 });
+
+  sections.forEach(section => navObserver.observe(section));
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    const slideIds = Array.from(sections).map(s => s.id);
+    const currentIdx = slideIds.findIndex(id => {
+      const el = document.getElementById(id);
+      const rect = el.getBoundingClientRect();
+      return rect.top >= -100 && rect.top < window.innerHeight / 2;
+    });
+
+    if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+      e.preventDefault();
+      const next = Math.min(currentIdx + 1, slideIds.length - 1);
+      document.getElementById(slideIds[next]).scrollIntoView({ behavior: 'smooth' });
+    } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault();
+      const prev = Math.max(currentIdx - 1, 0);
+      document.getElementById(slideIds[prev]).scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+</script>
+</body>
+</html>
