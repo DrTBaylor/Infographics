@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Creator Ethics — The Tradeoff Compass</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #0f0f1a; }
+  body { display: flex; align-items: center; justify-content: center; }
+
+  .viewport-container {
+    width: 100%; max-width: 100vw; aspect-ratio: 16/9;
+    max-height: 100vh; position: relative; overflow: hidden;
+  }
+  .design-surface {
+    width: 1920px; height: 1080px; position: absolute; top: 0; left: 0;
+    transform-origin: top left;
+    font-family: 'DM Sans', sans-serif; color: #e8e6e3;
+    display: flex; flex-direction: column;
+    background: #0f0f1a;
+  }
+
+  /* ===== TOP BAR ===== */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 40px 14px; border-bottom: 1px solid #1e1e3a;
+    background: linear-gradient(180deg, #161630 0%, #0f0f1a 100%);
+    flex-shrink: 0; height: 72px;
+  }
+  .top-left { display: flex; align-items: baseline; gap: 16px; }
+  .top-tag {
+    font-size: 10px; font-weight: 700; color: #f39c12;
+    letter-spacing: 3px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+  .top-bar h1 {
+    font-size: 26px; font-weight: 800;
+    font-family: 'Playfair Display', serif;
+    background: linear-gradient(135deg, #e8e6e3, #b0aea8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .disclaimer-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 8px;
+    border: 1px solid #e74c3c33; background: rgba(231,76,60,0.06);
+    color: #e74c3c; font-size: 11px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .disclaimer-btn:hover { background: rgba(231,76,60,0.12); }
+
+  /* ===== SCENARIO BAR ===== */
+  .scenario-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 40px; border-bottom: 1px solid #1a1a30;
+    flex-shrink: 0; height: 52px; overflow-x: auto;
+  }
+  .scenario-bar-label {
+    font-size: 12px; font-weight: 700; color: #666;
+    letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    white-space: nowrap; margin-right: 4px;
+  }
+  .cat-chip {
+    padding: 5px 14px; border-radius: 20px;
+    border: 1px solid #2a2a48; background: #13132a;
+    color: #888; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .cat-chip:hover { border-color: #f39c1266; color: #ccc; }
+  .cat-chip.active { border-color: #f39c12; color: #f39c12; background: rgba(243,156,18,0.1); }
+
+  /* ===== PRESET PILLS (appear below category) ===== */
+  .preset-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 40px; flex-shrink: 0; height: 46px;
+    border-bottom: 1px solid #1a1a30; overflow-x: auto;
+  }
+  .preset-pill {
+    padding: 5px 16px; border-radius: 8px;
+    border: 1px solid #2a2a48; background: #13132a;
+    color: #999; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .preset-pill:hover { border-color: #5588cc; color: #ddd; }
+  .preset-pill.active { border-color: #5588cc; color: #fff; background: rgba(85,136,204,0.15); }
+
+  /* ===== MAIN AREA ===== */
+  .main-area {
+    flex: 1; display: flex; min-height: 0;
+    padding: 16px 40px 20px; gap: 24px;
+  }
+
+  /* LEFT: sliders */
+  .left-col { flex: 1.05; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .slider-panels { display: flex; gap: 16px; flex: 1; min-height: 0; }
+
+  .panel {
+    flex: 1; background: #111128; border: 1px solid #222244;
+    border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-tag {
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-tag .bar { width: 18px; height: 2px; display: inline-block; }
+  .panel-sub { font-size: 11px; color: #555; margin-bottom: 14px; }
+  .panel-body { flex: 1; overflow-y: auto; }
+  .panel-empty { font-size: 13px; color: #444; font-style: italic; padding: 20px 0; text-align: center; }
+
+  /* Slider groups */
+  .slider-group { margin-bottom: 16px; animation: fadeSlide 0.3s ease-out; }
+  .slider-group:last-child { margin-bottom: 0; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
+  .slider-label { font-size: 13px; font-weight: 600; color: #e8e6e3; }
+  .slider-value {
+    font-size: 18px; font-weight: 700; font-family: 'Space Mono', monospace;
+    min-width: 28px; text-align: right; transition: color 0.3s;
+  }
+  .slider-desc { font-size: 10.5px; color: #666; margin-bottom: 5px; line-height: 1.35; }
+  .slider-wrap { position: relative; height: 28px; display: flex; align-items: center; }
+  .slider-track { position: absolute; width: 100%; height: 6px; background: #2a2a3e; border-radius: 3px; }
+  .slider-fill { height: 100%; border-radius: 3px; transition: width 0.15s ease, background 0.3s; }
+  .slider-thumb {
+    position: absolute; width: 18px; height: 18px; border-radius: 50%;
+    border: 3px solid #111128; transition: left 0.15s ease, background 0.3s;
+    pointer-events: none;
+  }
+  input[type="range"] { position: absolute; width: 100%; height: 28px; opacity: 0; cursor: pointer; z-index: 2; }
+  .slider-ends { display: flex; justify-content: space-between; margin-top: 1px; font-size: 10px; color: #555; }
+
+  /* RIGHT: gauge + discussion */
+  .right-col { width: 680px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+
+  /* Gauge card */
+  .gauge-card {
+    background: #111128; border: 1px solid #222244; border-radius: 14px;
+    padding: 16px 24px; display: flex; align-items: center; gap: 20px;
+  }
+  .gauge-svg-wrap { flex-shrink: 0; }
+  .gauge-right { flex: 1; }
+  .zone-label-text {
+    font-size: 20px; font-weight: 700; letter-spacing: 0.5px;
+    margin-bottom: 4px; transition: color 0.4s;
+  }
+  .zone-desc-text { font-size: 13px; color: #999; line-height: 1.5; }
+
+  /* Shannon card */
+  .shannon-card {
+    background: linear-gradient(135deg, #131330 0%, #16213e 100%);
+    border: 1px solid #282850; border-radius: 14px; padding: 14px 20px;
+  }
+  .shannon-tag {
+    font-size: 11px; font-weight: 700; color: #7777aa;
+    letter-spacing: 1.5px; margin-bottom: 10px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+  .shannon-bars { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .shannon-bars .bar-col { flex: 1; }
+  .shannon-bars .bar-label { font-size: 10px; color: #555; margin-bottom: 3px; }
+  .shannon-bars .bar-track { height: 7px; background: #2a2a3e; border-radius: 4px; overflow: hidden; }
+  .shannon-bars .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .shannon-bars .separator { font-size: 16px; color: #444; font-family: 'Space Mono', monospace; }
+  .shannon-text { font-size: 12px; color: #7777aa; line-height: 1.5; font-style: italic; }
+
+  /* Discussion card */
+  .discuss-card {
+    flex: 1; background: #111128; border: 1px solid #f39c1222;
+    border-radius: 14px; padding: 16px 22px; display: flex; flex-direction: column;
+    min-height: 0;
+  }
+  .discuss-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .discuss-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(243,156,18,0.12); display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .discuss-title {
+    font-size: 13px; font-weight: 700; color: #f39c12;
+    letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+  .discuss-body { flex: 1; overflow-y: auto; }
+  .discuss-q {
+    font-size: 15px; color: #ccc; line-height: 1.55; margin-bottom: 12px;
+    padding-left: 16px; border-left: 3px solid #f39c1244;
+  }
+  .discuss-q:last-child { margin-bottom: 0; }
+  .discuss-empty { font-size: 13px; color: #555; font-style: italic; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none; position: absolute; top: 0; left: 0; width: 1920px; height: 1080px;
+    background: rgba(0,0,0,0.6); z-index: 1000;
+    justify-content: center; align-items: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal-box {
+    background: #1a1a2e; border: 1px solid #f39c1244;
+    border-radius: 16px; padding: 32px 36px; max-width: 540px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal-box h3 { font-size: 20px; font-weight: 700; color: #e8e6e3; margin-bottom: 14px; }
+  .modal-box p { font-size: 14px; color: #999; line-height: 1.65; margin-bottom: 10px; }
+  .modal-close {
+    margin-top: 18px; padding: 10px 28px; border-radius: 8px;
+    border: 1px solid #333355; background: #13132a;
+    color: #ccc; font-size: 13px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .modal-close:hover { border-color: #f39c12; color: #f39c12; }
+
+  /* ===== FOOTER ===== */
+  .bottom-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 32px; flex-shrink: 0;
+    border-top: 1px solid #1a1a30;
+    font-size: 11px; color: #444; font-family: 'Space Mono', monospace;
+  }
+  .active-note strong { color: #f39c12; }
+  .nav-hint { color: #555; }
+  .nav-hint kbd {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    border: 1px solid #333; background: #1a1a2e; font-size: 10px;
+    font-family: 'Space Mono', monospace; color: #888;
+  }
+
+  /* ===== TABS ===== */
+  .tab-bar {
+    display: flex; gap: 0; padding: 0 40px; flex-shrink: 0; height: 42px;
+    border-bottom: 1px solid #1a1a30; align-items: stretch;
+  }
+  .tab-btn {
+    display: flex; align-items: center; gap: 7px;
+    padding: 0 24px; border: none; background: none;
+    color: #555; font-size: 13px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .tab-btn:hover { color: #999; }
+  .tab-btn.active { color: #f39c12; border-bottom-color: #f39c12; }
+  .tab-btn svg { opacity: 0.7; }
+  .tab-btn.active svg { opacity: 1; stroke: #f39c12; }
+  .tab-content { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .tab-content.active { display: flex; }
+
+  /* ===== FACTORS REFERENCE PAGE ===== */
+  .factors-page {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 20px 40px 16px; min-height: 0;
+  }
+  .factors-intro {
+    text-align: center; margin-bottom: 18px; flex-shrink: 0;
+  }
+  .factors-intro-title {
+    font-size: 22px; font-weight: 800;
+    font-family: 'Playfair Display', serif; color: #e8e6e3;
+    margin-bottom: 6px;
+  }
+  .factors-intro-sub {
+    font-size: 14px; color: #777; line-height: 1.5; max-width: 700px; margin: 0 auto;
+  }
+  .factors-intro-sub strong { color: #e8e6e3; }
+  .factors-columns {
+    flex: 1; display: flex; gap: 24px; min-height: 0;
+  }
+  .factors-col {
+    flex: 1; background: #111128; border: 1px solid #222244;
+    border-radius: 14px; padding: 18px 22px; display: flex;
+    flex-direction: column; min-height: 0;
+  }
+  .factors-col-header {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .factors-col-header .bar { width: 18px; height: 2px; display: inline-block; }
+  .factors-col-sub {
+    font-size: 11px; font-weight: 400; color: #555;
+    text-transform: none; letter-spacing: 0;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .factors-list {
+    flex: 1; overflow-y: auto; margin-top: 12px;
+    padding-right: 6px;
+  }
+  .factor-item {
+    padding: 10px 0; border-bottom: 1px solid #1a1a35;
+  }
+  .factor-item:last-child { border-bottom: none; }
+  .factor-name {
+    font-size: 14px; font-weight: 700; color: #e8e6e3;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 3px;
+  }
+  .factor-dir {
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .factor-dir.ai { background: rgba(39,174,96,0.15); color: #27ae60; }
+  .factor-dir.human { background: rgba(231,76,60,0.15); color: #e74c3c; }
+  .factor-dir.context { background: rgba(243,156,18,0.15); color: #f39c12; }
+  .factor-desc { font-size: 12px; color: #777; line-height: 1.45; }
+
+  .factors-legend {
+    display: flex; gap: 28px; justify-content: center;
+    padding-top: 14px; flex-shrink: 0;
+    font-size: 12px; color: #666;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  /* ===== SHANNON FRAMEWORK PAGE ===== */
+  .shannon-page {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 18px 40px 14px; min-height: 0;
+  }
+  .sp-title-row { text-align: center; flex-shrink: 0; margin-bottom: 16px; }
+  .sp-title {
+    font-size: 24px; font-weight: 800;
+    font-family: 'Playfair Display', serif; color: #e8e6e3;
+    margin-bottom: 4px;
+  }
+  .sp-subtitle {
+    font-size: 14px; color: #777; line-height: 1.5; max-width: 720px; margin: 0 auto;
+  }
+  .sp-body {
+    flex: 1; display: flex; gap: 28px; min-height: 0;
+  }
+
+  /* Left: pipeline diagram */
+  .sp-diagram-col {
+    width: 680px; flex-shrink: 0; display: flex; flex-direction: column;
+  }
+  .sp-pipeline {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center; gap: 0;
+  }
+  .sp-stage {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 12px 18px; border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid transparent;
+  }
+  .sp-stage-highlight {
+    background: rgba(255,255,255,0.04);
+    border-color: #ffffff08;
+  }
+  .sp-stage-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; border: 1px solid;
+  }
+  .sp-stage-content { flex: 1; min-width: 0; }
+  .sp-stage-label {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    font-family: 'Space Mono', monospace; margin-bottom: 2px;
+  }
+  .sp-stage-title {
+    font-size: 16px; font-weight: 700; color: #e8e6e3; margin-bottom: 4px;
+  }
+  .sp-stage-desc {
+    font-size: 12.5px; color: #999; line-height: 1.55;
+  }
+  .sp-stage-desc em { color: #f39c12; font-style: italic; }
+  .sp-arrow {
+    display: flex; align-items: center; gap: 10px;
+    padding: 2px 0 2px 22px;
+  }
+  .sp-arrow-label {
+    font-size: 11px; font-weight: 700; color: #555;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  /* Right: insight cards */
+  .sp-insights-col {
+    flex: 1; display: flex; flex-direction: column;
+    gap: 12px; min-height: 0; overflow-y: auto;
+  }
+  .sp-insight-card {
+    background: #111128; border: 1px solid #222244;
+    border-radius: 12px; padding: 14px 18px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .sp-insight-icon {
+    font-size: 22px; flex-shrink: 0; width: 36px;
+    height: 36px; display: flex; align-items: center;
+    justify-content: center; border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+  }
+  .sp-insight-title {
+    font-size: 14px; font-weight: 700; color: #e8e6e3; margin-bottom: 4px;
+  }
+  .sp-insight-body {
+    font-size: 12px; color: #999; line-height: 1.6;
+  }
+  .sp-insight-body em { color: #f39c12; font-style: italic; }
+
+  .sp-footer-quote {
+    text-align: center; flex-shrink: 0; margin-top: 12px;
+    font-size: 13px; color: #555; font-style: italic;
+    font-family: 'Playfair Display', serif;
+    padding-top: 10px; border-top: 1px solid #1a1a30;
+  }
+</style>
+</head>
+<body>
+<div class="viewport-container" id="viewportContainer">
+<div class="design-surface" id="designSurface">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <span class="top-tag">AI Creator Ethics</span>
+      <h1>The Tradeoff Compass</h1>
+    </div>
+    <button class="disclaimer-btn" id="disclaimerBtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      This is a thought tool, not a calculator
+    </button>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="compass" id="tabCompass">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      Compass
+    </button>
+    <button class="tab-btn" data-tab="shannon" id="tabShannon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Shannon Mental Model
+    </button>
+    <button class="tab-btn" data-tab="factors" id="tabFactors">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      All Factors Reference
+    </button>
+  </div>
+
+  <!-- ==================== COMPASS TAB ==================== -->
+  <div class="tab-content active" id="tab-compass">
+  <div class="scenario-bar" id="scenarioBar">
+    <span class="scenario-bar-label">Scenario:</span>
+  </div>
+
+  <!-- PRESET PILLS -->
+  <div class="preset-row" id="presetRow"></div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-area">
+    <!-- LEFT: sliders -->
+    <div class="left-col">
+      <div class="slider-panels">
+        <div class="panel">
+          <div class="panel-tag" style="color:#3498db;">
+            <span class="bar" style="background:#3498db;"></span> Artifact Domain
+          </div>
+          <div class="panel-sub">The output and its audience</div>
+          <div class="panel-body" id="artifactSliders"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-tag" style="color:#9b59b6;">
+            <span class="bar" style="background:#9b59b6;"></span> Creator Domain
+          </div>
+          <div class="panel-sub">You and your creative process</div>
+          <div class="panel-body" id="creatorSliders"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: gauge + shannon + discussion -->
+    <div class="right-col">
+      <!-- Gauge -->
+      <div class="gauge-card">
+        <div class="gauge-svg-wrap">
+          <svg viewBox="0 0 300 175" width="260" height="152">
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#e74c3c"/>
+                <stop offset="35%" stop-color="#e74c3c"/>
+                <stop offset="42%" stop-color="#f39c12"/>
+                <stop offset="58%" stop-color="#f39c12"/>
+                <stop offset="65%" stop-color="#27ae60"/>
+                <stop offset="100%" stop-color="#27ae60"/>
+              </linearGradient>
+              <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <path d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="url(#gaugeGrad)" stroke-width="16" stroke-linecap="round" opacity="0.25"/>
+            <path id="gaugeArc" d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="url(#gaugeGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="188 377" style="transition:stroke-dasharray 0.6s cubic-bezier(0.4,0,0.2,1)"/>
+            <text x="42" y="170" fill="#e74c3c" font-size="9" font-family="'DM Sans',sans-serif" font-weight="700" opacity="0.7">HUMAN-LED</text>
+            <text x="150" y="30" fill="#f39c12" font-size="9" font-family="'DM Sans',sans-serif" font-weight="700" text-anchor="middle" opacity="0.7">BALANCED</text>
+            <text x="210" y="170" fill="#27ae60" font-size="9" font-family="'DM Sans',sans-serif" font-weight="700" opacity="0.7">AI-AUGMENTED</text>
+            <g id="needleGroup" style="transition:transform 0.6s cubic-bezier(0.4,0,0.2,1)">
+              <line x1="150" y1="150" x2="150" y2="48" stroke="#f39c12" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)" id="needleLine"/>
+              <circle cx="150" cy="150" r="7" id="needleDot" fill="#f39c12"/>
+              <circle cx="150" cy="150" r="3.5" fill="#111128"/>
+            </g>
+            <text id="scoreText" x="150" y="128" text-anchor="middle" fill="#e8e6e3" font-size="30" font-family="'Space Mono',monospace" font-weight="700">50</text>
+            <text x="150" y="144" text-anchor="middle" fill="#666" font-size="9" font-family="'DM Sans',sans-serif" font-weight="600">AI SUITABILITY</text>
+          </svg>
+        </div>
+        <div class="gauge-right">
+          <div class="zone-label-text" id="zoneLabel">Balanced Partnership</div>
+          <div class="zone-desc-text" id="zoneDesc">AI as a thoughtful collaborator. Use it for efficiency, but inject your judgment and voice.</div>
+        </div>
+      </div>
+
+      <!-- Shannon -->
+      <div class="shannon-card">
+        <div class="shannon-tag">Shannon Information Lens</div>
+        <div class="shannon-bars">
+          <div class="bar-col">
+            <div class="bar-label">AI Token Generation (Entropy Space)</div>
+            <div class="bar-track"><div class="bar-fill" id="shannonAi" style="background:linear-gradient(90deg,#3498db,#2ecc71);width:50%;"></div></div>
+          </div>
+          <div class="separator">⇌</div>
+          <div class="bar-col">
+            <div class="bar-label">Human Refinement (Signal Injection)</div>
+            <div class="bar-track"><div class="bar-fill" id="shannonHuman" style="background:linear-gradient(90deg,#e74c3c,#f39c12);width:50%;"></div></div>
+          </div>
+        </div>
+        <div class="shannon-text" id="shannonText">A balanced exchange: AI provides the raw probability space, while human judgment selectively injects meaning.</div>
+      </div>
+
+      <!-- Facilitator Discussion -->
+      <div class="discuss-card">
+        <div class="discuss-header">
+          <div class="discuss-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <span class="discuss-title">Facilitator Discussion Prompts</span>
+        </div>
+        <div class="discuss-body" id="discussBody">
+          <div class="discuss-empty">Select a scenario above to see discussion prompts.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end tab-compass -->
+
+  <!-- ==================== SHANNON FRAMEWORK TAB ==================== -->
+  <div class="tab-content" id="tab-shannon">
+    <div class="shannon-page">
+
+      <!-- Title row -->
+      <div class="sp-title-row">
+        <div class="sp-title">The Shannon Information Lens</div>
+        <div class="sp-subtitle">A mental model — not technically precise, but hopefully useful — for understanding AI as a communication problem and the human role as faithful decoder</div>
+      </div>
+
+      <!-- Main diagram + explanation -->
+      <div class="sp-body">
+
+        <!-- LEFT: Pipeline Diagram -->
+        <div class="sp-diagram-col">
+          <div class="sp-pipeline">
+
+            <!-- Stage 1: Source -->
+            <div class="sp-stage">
+              <div class="sp-stage-icon" style="background:rgba(52,152,219,0.12); border-color:#3498db33;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </div>
+              <div class="sp-stage-content">
+                <div class="sp-stage-label" style="color:#3498db;">1. Information Source</div>
+                <div class="sp-stage-title">The World's Knowledge</div>
+                <div class="sp-stage-desc">Trillions of words, images, and patterns from human civilization — the internet, books, code, conversations. High entropy. Massive redundancy. Raw and unorganized.</div>
+              </div>
+            </div>
+
+            <div class="sp-arrow">
+              <svg width="20" height="32" viewBox="0 0 20 32"><path d="M10 0 L10 24 M4 18 L10 26 L16 18" stroke="#f39c12" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <span class="sp-arrow-label">Energy + Compute</span>
+            </div>
+
+            <!-- Stage 2: Encoder -->
+            <div class="sp-stage sp-stage-highlight">
+              <div class="sp-stage-icon" style="background:rgba(243,156,18,0.12); border-color:#f39c1233;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+              </div>
+              <div class="sp-stage-content">
+                <div class="sp-stage-label" style="color:#f39c12;">2. Lossy Compression</div>
+                <div class="sp-stage-title">The LLM as Compressed Knowledge</div>
+                <div class="sp-stage-desc">Training uses enormous energy to compress the world's information into a few trillion parameters. Useful patterns are preserved — the information becomes more organized. But the compression is <em>lossy</em> — misalignments to reality, inherited biases, and hallucinated patterns are baked in.</div>
+              </div>
+            </div>
+
+            <div class="sp-arrow">
+              <svg width="20" height="32" viewBox="0 0 20 32"><path d="M10 0 L10 24 M4 18 L10 26 L16 18" stroke="#f39c12" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <span class="sp-arrow-label">Prompt = Signal Injection</span>
+            </div>
+
+            <!-- Stage 3: Decoder (Human) -->
+            <div class="sp-stage sp-stage-highlight">
+              <div class="sp-stage-icon" style="background:rgba(231,76,60,0.12); border-color:#e74c3c33;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div class="sp-stage-content">
+                <div class="sp-stage-label" style="color:#e74c3c;">3. The Human Decoder</div>
+                <div class="sp-stage-title">You — The Faithful Decoder</div>
+                <div class="sp-stage-desc">Your role is to inject the right signal — context, judgment, domain expertise, intent — to decode the compressed information into a useful artifact. You are the error-correction layer. The quality of the output depends on your ability to be a <em>faithful</em> decoder: honest about what the model gets wrong, and deliberate about what you add.</div>
+              </div>
+            </div>
+
+            <div class="sp-arrow">
+              <svg width="20" height="32" viewBox="0 0 20 32"><path d="M10 0 L10 24 M4 18 L10 26 L16 18" stroke="#27ae60" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <span class="sp-arrow-label">Artifact Emerges</span>
+            </div>
+
+            <!-- Stage 4: Output -->
+            <div class="sp-stage">
+              <div class="sp-stage-icon" style="background:rgba(39,174,96,0.12); border-color:#27ae6033;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="sp-stage-content">
+                <div class="sp-stage-label" style="color:#27ae60;">4. The Artifact</div>
+                <div class="sp-stage-title">Useful Output in the World</div>
+                <div class="sp-stage-desc">A speech, a design, a document, a piece of code. Its quality reflects both the compressed knowledge of the model and the signal quality of the human decoder.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT: Key insights -->
+        <div class="sp-insights-col">
+
+          <div class="sp-insight-card">
+            <div class="sp-insight-icon">⚡</div>
+            <div class="sp-insight-title">Energy Shifts — It Doesn't Disappear</div>
+            <div class="sp-insight-body">Creating something useful from scratch has always required energy — human effort spent on research, drafting, revision, expertise. Training an LLM reorganizes vast amounts of information into compressed, lower-entropy parameters, but this takes enormous energy in the form of compute. The human energy of creation doesn't vanish; it's redistributed. Part moves upstream to the energy spent in training. The rest stays with you — the energy to prompt well, verify the output, and inject the meaning that the model can't.</div>
+          </div>
+
+          <div class="sp-insight-card">
+            <div class="sp-insight-icon">🔍</div>
+            <div class="sp-insight-title">Lossy and Misaligned Compression Has Consequences</div>
+            <div class="sp-insight-body">No compression is perfect. The model's parameters encode useful patterns, but also inherit the biases, gaps, and contradictions of their training data. What we call hallucinations are the probabilistic consequence of this — the model generating statistically plausible output that doesn't align with reality, because its compressed representation of the world is incomplete and shaped by its training context. This is why the human decoder matters: someone must recognize where the compression is misaligned and correct for it.</div>
+          </div>
+
+          <div class="sp-insight-card">
+            <div class="sp-insight-icon">📡</div>
+            <div class="sp-insight-title">The Prompt as Signal</div>
+            <div class="sp-insight-body">In Shannon's model, a message travels through a noisy channel. Your prompt is the signal you inject to extract meaning from the compressed knowledge. A vague prompt gets noisy output — the model falls back on statistical patterns. A precise prompt with domain context, constraints, and intent produces high-fidelity output. The signal-to-noise ratio of your prompt directly determines the quality of the artifact.</div>
+          </div>
+
+          <div class="sp-insight-card">
+            <div class="sp-insight-icon">🎯</div>
+            <div class="sp-insight-title">Faithful Decoding Is the Ethical Core</div>
+            <div class="sp-insight-body">The ethical question isn't "did you use AI?" — it's "were you a faithful decoder?" Did you verify the output against reality? Did you inject your own knowledge, voice, and judgment? Did you catch the compression artifacts? The Compass tool helps you think about <em>how much</em> human decoding each scenario demands — because a eulogy requires different fidelity than a sprinkler part.</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bottom quote -->
+      <div class="sp-footer-quote">
+        "The fundamental problem of communication is that of reproducing at one point either exactly or approximately a message selected at another point." — Claude Shannon, 1948
+      </div>
+
+    </div>
+  </div><!-- end tab-shannon -->
+
+  <!-- ==================== ALL FACTORS TAB ==================== -->
+  <div class="tab-content" id="tab-factors">
+    <div class="factors-page">
+      <div class="factors-intro">
+        <div class="factors-intro-title">The Factor Universe</div>
+        <div class="factors-intro-sub">Every scenario on the Compass tab highlights <strong>5 factors from each domain</strong> — because context determines which tradeoffs matter most. Here's the full set of considerations when deciding how much to lean on AI.</div>
+      </div>
+      <div class="factors-columns">
+        <!-- Artifact Domain -->
+        <div class="factors-col">
+          <div class="factors-col-header" style="color:#3498db;">
+            <span class="bar" style="background:#3498db;"></span> Artifact Domain
+            <span class="factors-col-sub">— factors about the output and its audience</span>
+          </div>
+          <div class="factors-list" id="factorsArtifact"></div>
+        </div>
+        <!-- Creator Domain -->
+        <div class="factors-col">
+          <div class="factors-col-header" style="color:#9b59b6;">
+            <span class="bar" style="background:#9b59b6;"></span> Creator Domain
+            <span class="factors-col-sub">— factors about you and your process</span>
+          </div>
+          <div class="factors-list" id="factorsCreator"></div>
+        </div>
+      </div>
+      <div class="factors-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#27ae60;"></span> Favors AI — higher values suggest AI is appropriate</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Favors Human — higher values suggest human effort needed</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#f39c12;"></span> Contextual — direction depends on the situation</span>
+      </div>
+    </div>
+  </div><!-- end tab-factors -->
+
+  <!-- FOOTER -->
+  <div class="bottom-bar">
+    <span class="active-note" id="activeNote">Showing <strong>5 artifact + 5 creator</strong> factors for this scenario</span>
+    <span class="nav-hint"><kbd>←</kbd> <kbd>→</kbd> cycle scenarios</span>
+  </div>
+
+  <!-- DISCLAIMER MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+      <h3>This Is a Thought Tool, Not a Calculator</h3>
+      <p>The slider values and composite scores are <strong style="color:#e8e6e3;">directional, not prescriptive</strong>. They help you think through tradeoffs — not produce a definitive answer.</p>
+      <p>Preset values reflect one person's rough intuition and are intended as conversation starters. Reasonable people will disagree, and that's the point.</p>
+      <p>Different use cases surface different factors — and <em>which</em> factors matter most is itself part of the discussion.</p>
+      <button class="modal-close" id="modalClose">Got it</button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ============================================================
+   MASTER FACTOR CATALOG
+   ============================================================ */
+var ALL_FACTORS = [
+  { id:"infoDensity", domain:"artifact", direction:"ai",
+    label:"Information Density Need",
+    desc:"How much factual signal, clarity, and completeness is needed?",
+    low:"Low complexity", high:"Dense & technical" },
+  { id:"originality", domain:"artifact", direction:"human",
+    label:"Originality Required",
+    desc:"How much must the output reflect unique, novel human thought?",
+    low:"Standard / templated", high:"Deeply original" },
+  { id:"audienceEffort", domain:"artifact", direction:"human",
+    label:"Audience Values Human Effort",
+    desc:"Does the recipient care that a human invested personal time?",
+    low:"Indifferent to process", high:"Effort is the signal" },
+  { id:"recipientScale", domain:"artifact", direction:"ai",
+    label:"Recipient Scale",
+    desc:"Is this for an institution/system vs. someone who knows you?",
+    low:"Intimate / personal", high:"Institutional / formal" },
+  { id:"emotionalWeight", domain:"artifact", direction:"human",
+    label:"Emotional / Relational Weight",
+    desc:"Does this carry deep emotional significance for the recipient?",
+    low:"Transactional", high:"Deeply meaningful" },
+  { id:"verifiability", domain:"artifact", direction:"ai",
+    label:"Verifiability of Output",
+    desc:"Can the result be objectively tested or fact-checked?",
+    low:"Hard to verify", high:"Easily tested" },
+  { id:"disclosureNorms", domain:"artifact", direction:"human",
+    label:"Transparency / Disclosure Norms",
+    desc:"Are there explicit or implicit rules about AI use here?",
+    low:"No norms exist", high:"Strict disclosure expected" },
+  { id:"displacement", domain:"artifact", direction:"human",
+    label:"Displaces Paid Creative Work",
+    desc:"Does using AI here take work from a paid creator?",
+    low:"No one loses work", high:"Directly displaces a creator" },
+  { id:"errorStakes", domain:"artifact", direction:"human",
+    label:"Stakes / Consequence of Error",
+    desc:"How much harm if the AI gets something wrong?",
+    low:"Low-consequence", high:"Errors cause real harm" },
+  { id:"culturalSensitivity", domain:"artifact", direction:"human",
+    label:"Cultural Sensitivity Required",
+    desc:"Does the output need lived understanding of culture or identity?",
+    low:"Culturally neutral", high:"Deep sensitivity needed" },
+  { id:"longevity", domain:"artifact", direction:"context",
+    label:"Longevity / Archival Importance",
+    desc:"Will this persist for years or is it ephemeral?",
+    low:"Ephemeral / disposable", high:"Permanent record" },
+  { id:"persuasiveIntent", domain:"artifact", direction:"context",
+    label:"Persuasive Intent",
+    desc:"Is this designed to change someone's mind or behavior?",
+    low:"Purely informational", high:"Designed to persuade" },
+  { id:"fulfillment", domain:"creator", direction:"human",
+    label:"Creative Fulfillment Need",
+    desc:"How much satisfaction do you get from doing this by hand?",
+    low:"Task is a chore", high:"The craft is the joy" },
+  { id:"skillGrowth", domain:"creator", direction:"human",
+    label:"Skill Growth Priority",
+    desc:"Is developing your own ability here important right now?",
+    low:"Not a growth area", high:"Core skill to develop" },
+  { id:"empowerment", domain:"creator", direction:"ai",
+    label:"Creative Empowerment",
+    desc:"Does AI let you create something that wouldn't exist without it?",
+    low:"Could do it without AI", high:"AI unlocks new possibilities" },
+  { id:"authenticity", domain:"creator", direction:"human",
+    label:"Authenticity of Expression",
+    desc:"How important is it that this sounds unmistakably like you?",
+    low:"Voice doesn't matter", high:"Must be my voice" },
+  { id:"domainExpertise", domain:"creator", direction:"context",
+    label:"Domain Expertise Level",
+    desc:"Can you catch AI mistakes? Expert accelerating vs. novice faking.",
+    low:"Novice in this area", high:"Deep domain expert" },
+  { id:"timePressure", domain:"creator", direction:"ai",
+    label:"Time Pressure",
+    desc:"Does urgency legitimately shift the calculus toward speed?",
+    low:"No deadline", high:"Needed immediately" },
+  { id:"ethicalAlignment", domain:"creator", direction:"human",
+    label:"Ethical Alignment with Values",
+    desc:"Does your use of AI here align with your personal values?",
+    low:"No tension", high:"Feels ethically fraught" },
+  { id:"collaborativeJoy", domain:"creator", direction:"ai",
+    label:"Joy of Human-AI Collaboration",
+    desc:"Do you find prompting, refining, and curating genuinely satisfying?",
+    low:"Prefer solo creation", high:"The collaboration is fun" },
+  { id:"perspectiveFeedback", domain:"creator", direction:"ai",
+    label:"Perspective & Feedback Access",
+    desc:"Does AI help you see your work through others' eyes — a different audience, culture, or expertise?",
+    low:"My perspective suffices", high:"Other viewpoints are critical" },
+  { id:"cognitiveLoad", domain:"creator", direction:"ai",
+    label:"Cognitive Load Management",
+    desc:"Does AI handle overwhelming complexity so you can focus on the decisions that matter?",
+    low:"Manageable without help", high:"Complexity is paralyzing" },
+  { id:"accessibilityNeed", domain:"creator", direction:"ai",
+    label:"Accessibility Need",
+    desc:"Does AI compensate for barriers — disability, language, cost, technical skill — that would otherwise prevent creation?",
+    low:"No barriers to creating", high:"Couldn't create without AI help" },
+  { id:"identityStakes", domain:"creator", direction:"human",
+    label:"Identity / Reputation Stakes",
+    desc:"Is this work tied to your professional name, credibility, or public identity?",
+    low:"Anonymous / low-profile", high:"My reputation is on the line" },
+];
+
+var factorMap = {};
+ALL_FACTORS.forEach(function(f) { factorMap[f.id] = f; });
+
+/* ============================================================
+   CATEGORIES & PRESETS
+   ============================================================ */
+var CATEGORIES = [
+  { id:"rec", label:"Recommendations", presets:["letterGoogle","letterPersonal"] },
+  { id:"edu", label:"Education & Research", presets:["textbook","researchPaper","corpTraining","langFlashcards"] },
+  { id:"wri", label:"Writing & Speech", presets:["creativeWriting","podcastScript","weddingSpeech","eulogyWriting","standupComedy","personalJournal"] },
+  { id:"vis", label:"Visual Art & Design", presets:["artFun","artShow","childrenBook","logoDesign","archSketches","productPhoto","museumDisplay"] },
+  { id:"mus", label:"Music & Media", presets:["familySongs","filmScore","gameLevelDesign"] },
+  { id:"pro", label:"Professional", presets:["resumeWriting","legalContract","socialMedia"] },
+  { id:"mak", label:"Making & Games", presets:["sprinkler3d","recipeDev","boardGameDesign"] },
+];
+
+var PRESETS = {
+  /* ——— RECOMMENDATIONS ——— */
+  letterGoogle: {
+    name:"Rec Letter → Big Company",
+    factors:[
+      "infoDensity","recipientScale","audienceEffort","disclosureNorms","verifiability",
+      "empowerment","perspectiveFeedback","authenticity","timePressure","identityStakes"
+    ],
+    vals:{
+      infoDensity:7, recipientScale:9, audienceEffort:2, disclosureNorms:3, verifiability:5,
+      empowerment:7, perspectiveFeedback:6, authenticity:3, timePressure:5, identityStakes:4
+    },
+    discuss:[
+      "Google's ATS will parse this before a human sees it. Does that institutional scale change how you feel about AI drafting it?",
+      "AI can show you how a recruiter might read this letter. Is that perspective-shifting 'writing' or 'consulting'?",
+      "Where's the line between 'AI-polished' and 'AI-authored'?"
+    ]
+  },
+  letterPersonal: {
+    name:"Rec Letter → Close Contact",
+    factors:[
+      "emotionalWeight","audienceEffort","originality","recipientScale","longevity",
+      "authenticity","empowerment","fulfillment","perspectiveFeedback","identityStakes"
+    ],
+    vals:{
+      emotionalWeight:8, audienceEffort:7, originality:6, recipientScale:2, longevity:5,
+      authenticity:8, empowerment:5, fulfillment:6, perspectiveFeedback:5, identityStakes:4
+    },
+    discuss:[
+      "If the recipient discovered you used AI, would it change the letter's impact on them?",
+      "Is there a difference between using AI to overcome writer's block vs. generating the whole thing?",
+      "What specific details would only YOU know to include — and does AI help you surface them or bury them?"
+    ]
+  },
+
+  /* ——— EDUCATION & RESEARCH ——— */
+  textbook: {
+    name:"Digital Textbook",
+    factors:[
+      "infoDensity","verifiability","errorStakes","displacement","longevity",
+      "empowerment","cognitiveLoad","collaborativeJoy","skillGrowth","identityStakes"
+    ],
+    vals:{
+      infoDensity:9, verifiability:7, errorStakes:6, displacement:4, longevity:8,
+      empowerment:9, cognitiveLoad:8, collaborativeJoy:8, skillGrowth:4, identityStakes:6
+    },
+    discuss:[
+      "Textbook writing requires managing enormous interconnected content. If AI handles that cognitive load, does the author become an editor?",
+      "A textbook needs accuracy above all. How does AI's tendency to hallucinate change the calculus?",
+      "If AI enables interactive content that wouldn't otherwise exist, does that educational benefit outweigh authorship concerns?"
+    ]
+  },
+  researchPaper: {
+    name:"Scientific Research Paper",
+    factors:[
+      "infoDensity","originality","disclosureNorms","errorStakes","longevity",
+      "identityStakes","skillGrowth","authenticity","cognitiveLoad","domainExpertise"
+    ],
+    vals:{
+      infoDensity:9, originality:8, disclosureNorms:9, errorStakes:8, longevity:8,
+      identityStakes:8, skillGrowth:7, authenticity:6, cognitiveLoad:6, domainExpertise:8
+    },
+    discuss:[
+      "Most journals now require AI disclosure. Where exactly does 'assistance' become 'authorship'?",
+      "Your name and reputation are permanently attached to this paper. Does that change the calculus compared to anonymous work?",
+      "If a student uses AI to write a lit review, did they learn anything — or did they skip the skill-growth that's the whole point?"
+    ]
+  },
+  corpTraining: {
+    name:"Corporate Training Materials",
+    factors:[
+      "infoDensity","recipientScale","verifiability","displacement","errorStakes",
+      "empowerment","timePressure","fulfillment","cognitiveLoad","accessibilityNeed"
+    ],
+    vals:{
+      infoDensity:8, recipientScale:8, verifiability:5, displacement:4, errorStakes:4,
+      empowerment:7, timePressure:7, fulfillment:2, cognitiveLoad:6, accessibilityNeed:3
+    },
+    discuss:[
+      "Nobody writes compliance training for creative fulfillment. Does low fulfillment automatically make it a good AI use case?",
+      "What about the instructional designer whose job this was — does displacement concern scale with how 'soulless' the task is?",
+      "Does the institutional audience care if training was AI-generated? Should they be told?"
+    ]
+  },
+  langFlashcards: {
+    name:"Language Learning Flashcards",
+    factors:[
+      "infoDensity","verifiability","recipientScale","displacement","errorStakes",
+      "empowerment","timePressure","skillGrowth","cognitiveLoad","collaborativeJoy"
+    ],
+    vals:{
+      infoDensity:8, verifiability:8, recipientScale:2, displacement:1, errorStakes:3,
+      empowerment:9, timePressure:6, skillGrowth:3, cognitiveLoad:5, collaborativeJoy:5
+    },
+    discuss:[
+      "Creating flashcards IS studying — the act of deciding what to include is part of learning. Does outsourcing that step undermine the goal?",
+      "If AI generates 500 flashcards in seconds, does the abundance itself change how you study?",
+      "What's the difference between AI-generated flashcards and using a published study set like Anki decks?"
+    ]
+  },
+
+  /* ——— WRITING & SPEECH ——— */
+  creativeWriting: {
+    name:"Creative Writing",
+    factors:[
+      "originality","audienceEffort","displacement","longevity","culturalSensitivity",
+      "authenticity","fulfillment","empowerment","skillGrowth","identityStakes"
+    ],
+    vals:{
+      originality:9, audienceEffort:7, displacement:6, longevity:6, culturalSensitivity:4,
+      authenticity:9, fulfillment:8, empowerment:5, skillGrowth:7, identityStakes:6
+    },
+    discuss:[
+      "Is the value of creative writing in the artifact — or in the struggle to create it?",
+      "Many authors use AI for brainstorming, world-building, or beating blank-page paralysis. Where does 'tool' become 'co-author'?",
+      "If you use AI to brainstorm and outline but write every sentence yourself, where does that land on the compass?"
+    ]
+  },
+  podcastScript: {
+    name:"Podcast Script Writing",
+    factors:[
+      "originality","audienceEffort","infoDensity","displacement","longevity",
+      "authenticity","empowerment","fulfillment","timePressure","perspectiveFeedback"
+    ],
+    vals:{
+      originality:7, audienceEffort:5, infoDensity:5, displacement:4, longevity:4,
+      authenticity:8, empowerment:6, fulfillment:6, timePressure:6, perspectiveFeedback:5
+    },
+    discuss:[
+      "Listeners tune in for YOUR voice and perspective. How much AI involvement before it stops being your show?",
+      "Research, outlining, and scripting serve different functions. Should AI be used differently for each step?",
+      "Many podcasters already use teams of writers and researchers. Is AI fundamentally different from a writing staff?"
+    ]
+  },
+  weddingSpeech: {
+    name:"Wedding Speech",
+    factors:[
+      "emotionalWeight","audienceEffort","originality","recipientScale","longevity",
+      "authenticity","perspectiveFeedback","empowerment","fulfillment","cognitiveLoad"
+    ],
+    vals:{
+      emotionalWeight:9, audienceEffort:8, originality:6, recipientScale:2, longevity:5,
+      authenticity:8, perspectiveFeedback:7, empowerment:7, fulfillment:7, cognitiveLoad:5
+    },
+    discuss:[
+      "There's a spectrum: AI writes it → AI outlines it → AI brainstorms with you → you do it alone. Where on that line does it stop being 'your' speech?",
+      "A father used AI to brainstorm ideas, test how stories might land with the audience, and shape an outline — then delivered it from the heart. Is there an ethical issue here?",
+      "AI can show you how your words might read to someone who doesn't know your family. Is that perspective-checking 'writing' or 'editing'?"
+    ]
+  },
+  eulogyWriting: {
+    name:"Eulogy Writing",
+    factors:[
+      "emotionalWeight","audienceEffort","originality","culturalSensitivity","longevity",
+      "authenticity","cognitiveLoad","empowerment","accessibilityNeed","fulfillment"
+    ],
+    vals:{
+      emotionalWeight:10, audienceEffort:9, originality:5, culturalSensitivity:5, longevity:6,
+      authenticity:9, cognitiveLoad:8, empowerment:6, accessibilityNeed:5, fulfillment:4
+    },
+    discuss:[
+      "Grief can make organized thought nearly impossible. If AI manages that cognitive load while you provide the memories and meaning, is that collaboration or outsourcing?",
+      "This might be the highest-stakes personal writing most people ever do. Does the emotional weight settle the question, or complicate it?",
+      "If someone literally cannot write through their grief, does accessibility need override authenticity concerns?"
+    ]
+  },
+  standupComedy: {
+    name:"Stand-up Comedy Routine",
+    factors:[
+      "originality","audienceEffort","displacement","disclosureNorms","culturalSensitivity",
+      "authenticity","fulfillment","identityStakes","skillGrowth","perspectiveFeedback"
+    ],
+    vals:{
+      originality:10, audienceEffort:9, displacement:7, disclosureNorms:5, culturalSensitivity:5,
+      authenticity:10, fulfillment:9, identityStakes:9, skillGrowth:8, perspectiveFeedback:3
+    },
+    discuss:[
+      "Comedy is rooted in a unique personal perspective. A comedian's reputation IS their voice — can AI contribute without undermining that identity?",
+      "Comedians already workshop material with other humans. Is AI fundamentally different from a writers' room?",
+      "If the audience laughs, does it matter who wrote the joke — or does the comedian's contract with the audience require personal authorship?"
+    ]
+  },
+  personalJournal: {
+    name:"Personal Journal / Diary",
+    factors:[
+      "emotionalWeight","originality","audienceEffort","longevity","verifiability",
+      "authenticity","fulfillment","skillGrowth","collaborativeJoy","cognitiveLoad"
+    ],
+    vals:{
+      emotionalWeight:7, originality:5, audienceEffort:1, longevity:4, verifiability:2,
+      authenticity:9, fulfillment:8, skillGrowth:6, collaborativeJoy:4, cognitiveLoad:4
+    },
+    discuss:[
+      "A journal's only audience is you. Does that zero audience-effort make AI involvement more acceptable?",
+      "There's a difference between 'AI wrote my journal' and 'AI prompted me to reflect deeper.' Where's the line?",
+      "If journaling is a tool for self-understanding, could AI-guided prompting actually enhance that — or does it short-circuit the process?"
+    ]
+  },
+
+  /* ——— VISUAL ART & DESIGN ——— */
+  artFun: {
+    name:"Create Art for Personal Fun",
+    factors:[
+      "audienceEffort","displacement","originality","verifiability","culturalSensitivity",
+      "empowerment","collaborativeJoy","fulfillment","skillGrowth","accessibilityNeed"
+    ],
+    vals:{
+      audienceEffort:1, displacement:2, originality:4, verifiability:3, culturalSensitivity:2,
+      empowerment:9, collaborativeJoy:8, fulfillment:8, skillGrowth:3, accessibilityNeed:6
+    },
+    discuss:[
+      "If nobody else sees it and you enjoy the process, is there any ethical concern at all?",
+      "Does 'fun' AI art change your relationship with traditional art skills over time?",
+      "At what point does sharing 'fun' AI art on social media cross into different ethical territory?"
+    ]
+  },
+  artShow: {
+    name:"Create Art for an Art Show",
+    factors:[
+      "originality","audienceEffort","displacement","disclosureNorms","longevity",
+      "authenticity","identityStakes","fulfillment","skillGrowth","empowerment"
+    ],
+    vals:{
+      originality:9, audienceEffort:9, displacement:7, disclosureNorms:7, longevity:7,
+      authenticity:9, identityStakes:8, fulfillment:7, skillGrowth:6, empowerment:4
+    },
+    discuss:[
+      "Your name is on the gallery wall. Does submitting AI art risk your reputation — or redefine what 'your art' means?",
+      "Should AI art be in a separate category, or judged alongside human art?",
+      "The audience came expecting human expression. Is undisclosed AI art a form of deception?"
+    ]
+  },
+  childrenBook: {
+    name:"Children's Book Illustration",
+    factors:[
+      "originality","displacement","audienceEffort","culturalSensitivity","longevity",
+      "accessibilityNeed","empowerment","fulfillment","identityStakes","collaborativeJoy"
+    ],
+    vals:{
+      originality:8, displacement:7, audienceEffort:6, culturalSensitivity:4, longevity:6,
+      accessibilityNeed:7, empowerment:7, fulfillment:6, identityStakes:5, collaborativeJoy:6
+    },
+    discuss:[
+      "A parent who can't draw creates a personalized book for their child. Accessibility need is high — but so is displacement of illustrators. How do you weigh those?",
+      "Children's illustrators are among the most affected by AI art. Does knowing that change your answer?",
+      "Does the child reader care who illustrated it — and should their experience matter more than the industry impact?"
+    ]
+  },
+  logoDesign: {
+    name:"Logo Design for Startup",
+    factors:[
+      "originality","displacement","longevity","verifiability","culturalSensitivity",
+      "empowerment","authenticity","accessibilityNeed","identityStakes","collaborativeJoy"
+    ],
+    vals:{
+      originality:8, displacement:7, longevity:8, verifiability:4, culturalSensitivity:4,
+      empowerment:7, authenticity:6, accessibilityNeed:5, identityStakes:5, collaborativeJoy:5
+    },
+    discuss:[
+      "A logo lasts decades. Does longevity change how you feel about AI-generated vs. designer-made?",
+      "A cash-strapped startup can't afford a designer. Is AI the ethical choice or the convenient one?",
+      "If you later become successful, would you replace an AI logo with a human-designed one? What does that instinct tell you?"
+    ]
+  },
+  archSketches: {
+    name:"Architecture Concept Sketches",
+    factors:[
+      "originality","verifiability","infoDensity","errorStakes","displacement",
+      "empowerment","collaborativeJoy","skillGrowth","cognitiveLoad","perspectiveFeedback"
+    ],
+    vals:{
+      originality:7, verifiability:6, infoDensity:5, errorStakes:5, displacement:5,
+      empowerment:8, collaborativeJoy:7, skillGrowth:7, cognitiveLoad:6, perspectiveFeedback:6
+    },
+    discuss:[
+      "Architecture sketches explore possibility space. Is AI a better brainstorming partner than a sketchpad?",
+      "If a client falls in love with an AI concept that's structurally impossible, who's responsible?",
+      "Does the hand-drawn sketch carry meaning that a generated image doesn't — or is that nostalgia?"
+    ]
+  },
+  productPhoto: {
+    name:"Product Photography",
+    factors:[
+      "displacement","verifiability","audienceEffort","infoDensity","disclosureNorms",
+      "empowerment","timePressure","accessibilityNeed","fulfillment","collaborativeJoy"
+    ],
+    vals:{
+      displacement:6, verifiability:8, audienceEffort:3, infoDensity:5, disclosureNorms:4,
+      empowerment:8, timePressure:7, accessibilityNeed:5, fulfillment:3, collaborativeJoy:5
+    },
+    discuss:[
+      "The product is real and verifiable. Does that make AI-generated photos more acceptable than AI-generated portraits?",
+      "Consumers expect product photos to be truthful. Where's the line between enhancement and deception?",
+      "A product photographer's livelihood is at stake. Does displacement weigh differently for commercial vs. creative photography?"
+    ]
+  },
+  museumDisplay: {
+    name:"Museum Display Creation",
+    factors:[
+      "infoDensity","culturalSensitivity","verifiability","errorStakes","longevity",
+      "empowerment","perspectiveFeedback","cognitiveLoad","collaborativeJoy","domainExpertise"
+    ],
+    vals:{
+      infoDensity:8, culturalSensitivity:7, verifiability:6, errorStakes:6, longevity:7,
+      empowerment:8, perspectiveFeedback:7, cognitiveLoad:6, collaborativeJoy:6, domainExpertise:7
+    },
+    discuss:[
+      "Museums must present artifacts from the perspective of the cultures that created them. Can AI help surface those viewpoints — or does it flatten them?",
+      "Museums are trusted sources of truth. How does AI-generated content affect institutional credibility?",
+      "If AI makes museum content more accessible and engaging for visitors, does that benefit justify the risks?"
+    ]
+  },
+
+  /* ——— MUSIC & MEDIA ——— */
+  familySongs: {
+    name:"Make AI Songs for Family Event",
+    factors:[
+      "emotionalWeight","displacement","audienceEffort","originality","verifiability",
+      "empowerment","collaborativeJoy","accessibilityNeed","fulfillment","authenticity"
+    ],
+    vals:{
+      emotionalWeight:6, displacement:2, audienceEffort:4, originality:4, verifiability:3,
+      empowerment:9, collaborativeJoy:8, accessibilityNeed:8, fulfillment:8, authenticity:5
+    },
+    discuss:[
+      "Nobody in the family is a songwriter. AI makes something possible that simply wouldn't exist otherwise. Is this the cleanest case for AI use?",
+      "The joy is in creating something personal together. Does it matter that AI did the heavy lifting musically?",
+      "Would you tell the family it was AI-generated? Does transparency change the shared experience?"
+    ]
+  },
+  filmScore: {
+    name:"Film Score Composition",
+    factors:[
+      "originality","displacement","audienceEffort","longevity","culturalSensitivity",
+      "empowerment","authenticity","fulfillment","collaborativeJoy","accessibilityNeed"
+    ],
+    vals:{
+      originality:8, displacement:8, audienceEffort:5, longevity:7, culturalSensitivity:3,
+      empowerment:7, authenticity:6, fulfillment:7, collaborativeJoy:6, accessibilityNeed:5
+    },
+    discuss:[
+      "Film composers are skilled professionals. Does AI threaten an entire creative industry — or democratize filmmaking for indie creators?",
+      "Music evokes emotion. If an AI-composed score moves the audience, does the origin matter?",
+      "An indie filmmaker with no budget can now score their film. Does the empowerment outweigh the displacement?"
+    ]
+  },
+  gameLevelDesign: {
+    name:"Video Game Level Design",
+    factors:[
+      "originality","infoDensity","verifiability","displacement","longevity",
+      "empowerment","collaborativeJoy","fulfillment","cognitiveLoad","skillGrowth"
+    ],
+    vals:{
+      originality:7, infoDensity:6, verifiability:7, displacement:5, longevity:5,
+      empowerment:9, collaborativeJoy:8, fulfillment:8, cognitiveLoad:6, skillGrowth:5
+    },
+    discuss:[
+      "Procedural generation has been in games for decades. Is AI generation fundamentally different?",
+      "Players want fun levels, not 'human-crafted' levels. Does output-focus change the ethics?",
+      "If AI generates the terrain but humans design the gameplay, where does authorship live?"
+    ]
+  },
+
+  /* ——— PROFESSIONAL ——— */
+  resumeWriting: {
+    name:"Resume / CV Writing",
+    factors:[
+      "infoDensity","recipientScale","disclosureNorms","verifiability","longevity",
+      "perspectiveFeedback","empowerment","timePressure","authenticity","cognitiveLoad"
+    ],
+    vals:{
+      infoDensity:7, recipientScale:8, disclosureNorms:3, verifiability:5, longevity:4,
+      perspectiveFeedback:7, empowerment:6, timePressure:6, authenticity:4, cognitiveLoad:5
+    },
+    discuss:[
+      "AI can show you how a recruiter might read your resume. Is that perspective-shifting a form of 'writing' or a form of 'consulting'?",
+      "If the hiring system uses AI to screen and you used AI to write, is that a fair game or an arms race?",
+      "Does AI-assisted resume writing give an unfair advantage, or level the playing field for people without professional coaches?"
+    ]
+  },
+  legalContract: {
+    name:"Legal Contract Drafting",
+    factors:[
+      "infoDensity","errorStakes","verifiability","disclosureNorms","longevity",
+      "cognitiveLoad","domainExpertise","empowerment","identityStakes","timePressure"
+    ],
+    vals:{
+      infoDensity:9, errorStakes:9, verifiability:7, disclosureNorms:6, longevity:7,
+      cognitiveLoad:8, domainExpertise:9, empowerment:6, identityStakes:7, timePressure:5
+    },
+    discuss:[
+      "Legal documents are overwhelming in complexity. If AI manages that cognitive load while an expert reviews every clause, is that different from using a paralegal?",
+      "A single misworded clause can cost millions. How does that error stakes reality interact with AI's pattern-matching strengths?",
+      "Should clients be told their contract was AI-drafted? Do disclosure norms exist yet in legal practice?"
+    ]
+  },
+  socialMedia: {
+    name:"Social Media Content Calendar",
+    factors:[
+      "recipientScale","infoDensity","originality","audienceEffort","displacement",
+      "timePressure","empowerment","fulfillment","cognitiveLoad","collaborativeJoy"
+    ],
+    vals:{
+      recipientScale:6, infoDensity:4, originality:3, audienceEffort:2, displacement:4,
+      timePressure:8, empowerment:7, fulfillment:2, cognitiveLoad:6, collaborativeJoy:4
+    },
+    discuss:[
+      "Social media is already flooded with low-effort content. Does AI-generated content make it worse — or is it already that?",
+      "If nobody values the craft and the creator doesn't enjoy it, is this the ideal AI use case?",
+      "At what point does AI-generated social content become spam?"
+    ]
+  },
+
+  /* ——— MAKING & GAMES ——— */
+  sprinkler3d: {
+    name:"3D Print Parts to Fix Sprinkler",
+    factors:[
+      "verifiability","infoDensity","errorStakes","displacement","originality",
+      "empowerment","accessibilityNeed","timePressure","fulfillment","cognitiveLoad"
+    ],
+    vals:{
+      verifiability:9, infoDensity:8, errorStakes:4, displacement:1, originality:2,
+      empowerment:9, accessibilityNeed:8, timePressure:6, fulfillment:6, cognitiveLoad:5
+    },
+    discuss:[
+      "The part either fits or it doesn't — perfect verifiability. Does that make this an open-and-shut case for AI?",
+      "This is empowerment at its purest — something that wouldn't exist without AI assistance. Any concerns at all?",
+      "Should the same logic apply to AI-designed structural components in buildings, or does scale change the ethics?"
+    ]
+  },
+  recipeDev: {
+    name:"Cooking Recipe Development",
+    factors:[
+      "verifiability","originality","infoDensity","culturalSensitivity","displacement",
+      "empowerment","collaborativeJoy","fulfillment","perspectiveFeedback","skillGrowth"
+    ],
+    vals:{
+      verifiability:8, originality:5, infoDensity:5, culturalSensitivity:4, displacement:3,
+      empowerment:7, collaborativeJoy:7, fulfillment:7, perspectiveFeedback:5, skillGrowth:4
+    },
+    discuss:[
+      "You'll taste-test the result — the ultimate verifiability. Does that settle the question?",
+      "Recipes are already widely shared and remixed. Is AI just another source of inspiration?",
+      "If AI suggests a fusion recipe drawing on a cuisine you don't know well, does cultural sensitivity come into play?"
+    ]
+  },
+  boardGameDesign: {
+    name:"Board Game Design",
+    factors:[
+      "originality","verifiability","infoDensity","displacement","longevity",
+      "empowerment","collaborativeJoy","fulfillment","cognitiveLoad","perspectiveFeedback"
+    ],
+    vals:{
+      originality:8, verifiability:7, infoDensity:5, displacement:4, longevity:5,
+      empowerment:8, collaborativeJoy:8, fulfillment:8, cognitiveLoad:5, perspectiveFeedback:5
+    },
+    discuss:[
+      "Board games are playtested. Does iterative human testing redeem AI-generated initial designs?",
+      "The joy of game design is in the creative process. Does AI enhance or replace that?",
+      "If you publish and sell the game, does the AI contribution need to be disclosed?"
+    ]
+  },
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var values = {};
+var activeFactorIds = [];
+var activeCategory = null;
+var activePresetKey = null;
+var allPresetKeys = [];
+
+// Build flat list of all preset keys in category order
+CATEGORIES.forEach(function(cat) {
+  cat.presets.forEach(function(pk) { allPresetKeys.push(pk); });
+});
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function sliderColor(factor, val) {
+  if (factor.direction === "ai") return val > 6 ? "#27ae60" : val > 3 ? "#f39c12" : "#e74c3c";
+  if (factor.direction === "human") return val > 6 ? "#e74c3c" : val > 3 ? "#f39c12" : "#27ae60";
+  return "#f39c12";
+}
+function zoneInfo(s) {
+  if (s < 33) return { zone:"Human-Led", color:"#e74c3c", desc:"This scenario calls for primarily human effort. AI may hinder authenticity or value." };
+  if (s < 66) return { zone:"Balanced Partnership", color:"#f39c12", desc:"AI as a thoughtful collaborator. Use it for efficiency, but inject your judgment and voice." };
+  return { zone:"AI-Augmented", color:"#27ae60", desc:"Strong case for AI assistance. Your expertise guides the process; AI amplifies output quality." };
+}
+
+/* ============================================================
+   BUILD CATEGORY CHIPS
+   ============================================================ */
+function buildCategoryChips() {
+  var bar = document.getElementById("scenarioBar");
+  CATEGORIES.forEach(function(cat) {
+    var chip = document.createElement("button");
+    chip.className = "cat-chip";
+    chip.textContent = cat.label;
+    chip.setAttribute("data-cat", cat.id);
+    chip.addEventListener("click", function() { selectCategory(cat.id); });
+    bar.appendChild(chip);
+  });
+}
+
+function selectCategory(catId) {
+  activeCategory = catId;
+  // Update chip states
+  document.querySelectorAll(".cat-chip").forEach(function(c) {
+    c.classList.toggle("active", c.getAttribute("data-cat") === catId);
+  });
+  // Build preset pills
+  var row = document.getElementById("presetRow");
+  row.innerHTML = "";
+  var cat = CATEGORIES.find(function(c) { return c.id === catId; });
+  if (!cat) return;
+  cat.presets.forEach(function(pk) {
+    var p = PRESETS[pk];
+    if (!p) return;
+    var pill = document.createElement("button");
+    pill.className = "preset-pill" + (pk === activePresetKey ? " active" : "");
+    pill.textContent = p.name;
+    pill.setAttribute("data-pk", pk);
+    pill.addEventListener("click", function() { loadPreset(pk); });
+    row.appendChild(pill);
+  });
+}
+
+/* ============================================================
+   BUILD SLIDERS
+   ============================================================ */
+function buildSliders() {
+  var artC = document.getElementById("artifactSliders");
+  var creC = document.getElementById("creatorSliders");
+  artC.innerHTML = ""; creC.innerHTML = "";
+  var artN = 0, creN = 0;
+
+  activeFactorIds.forEach(function(fid) {
+    var f = factorMap[fid]; if (!f) return;
+    var container = f.domain === "artifact" ? artC : creC;
+    if (f.domain === "artifact") artN++; else creN++;
+
+    var g = document.createElement("div");
+    g.className = "slider-group";
+    g.innerHTML =
+      '<div class="slider-header">' +
+        '<span class="slider-label">' + f.label + '</span>' +
+        '<span class="slider-value" id="val-' + f.id + '">5</span>' +
+      '</div>' +
+      '<div class="slider-desc">' + f.desc + '</div>' +
+      '<div class="slider-wrap">' +
+        '<div class="slider-track"><div class="slider-fill" id="fill-' + f.id + '"></div></div>' +
+        '<input type="range" min="0" max="10" value="5" id="input-' + f.id + '">' +
+        '<div class="slider-thumb" id="thumb-' + f.id + '"></div>' +
+      '</div>' +
+      '<div class="slider-ends"><span>' + (f.low || "Low") + '</span><span>' + (f.high || "High") + '</span></div>';
+    container.appendChild(g);
+
+    (function(factor) {
+      document.getElementById("input-" + factor.id).addEventListener("input", function() {
+        values[factor.id] = parseInt(this.value);
+        updateSliderVisual(factor);
+        updateGauge();
+        updateShannon();
+      });
+    })(f);
+  });
+
+  if (artN === 0) artC.innerHTML = '<div class="panel-empty">No artifact factors for this scenario</div>';
+  if (creN === 0) creC.innerHTML = '<div class="panel-empty">No creator factors for this scenario</div>';
+}
+
+function updateSliderVisual(factor) {
+  var el = document.getElementById("val-" + factor.id);
+  if (!el) return;
+  var v = values[factor.id] || 5;
+  var pct = (v / 10) * 100;
+  var c = sliderColor(factor, v);
+  el.textContent = v;
+  el.style.color = c;
+  document.getElementById("fill-" + factor.id).style.width = pct + "%";
+  document.getElementById("fill-" + factor.id).style.background = c;
+  document.getElementById("fill-" + factor.id).style.boxShadow = "0 0 8px " + c + "44";
+  document.getElementById("thumb-" + factor.id).style.left = "calc(" + pct + "% - 9px)";
+  document.getElementById("thumb-" + factor.id).style.background = c;
+  document.getElementById("thumb-" + factor.id).style.boxShadow = "0 0 10px " + c + "66";
+  document.getElementById("input-" + factor.id).value = v;
+}
+
+/* ============================================================
+   LOAD PRESET
+   ============================================================ */
+function loadPreset(key) {
+  var preset = PRESETS[key]; if (!preset) return;
+  activePresetKey = key;
+  activeFactorIds = preset.factors.slice();
+  values = {};
+  for (var k in preset.vals) values[k] = preset.vals[k];
+
+  // Highlight pill
+  document.querySelectorAll(".preset-pill").forEach(function(p) {
+    p.classList.toggle("active", p.getAttribute("data-pk") === key);
+  });
+
+  // Ensure category is selected
+  var catForPreset = CATEGORIES.find(function(cat) { return cat.presets.indexOf(key) !== -1; });
+  if (catForPreset && activeCategory !== catForPreset.id) {
+    selectCategory(catForPreset.id);
+    // Re-highlight the pill after category rebuild
+    document.querySelectorAll(".preset-pill").forEach(function(p) {
+      p.classList.toggle("active", p.getAttribute("data-pk") === key);
+    });
+  }
+
+  buildSliders();
+  activeFactorIds.forEach(function(fid) {
+    if (factorMap[fid]) updateSliderVisual(factorMap[fid]);
+  });
+  updateGauge();
+  updateShannon();
+  updateDiscussion();
+  updateActiveNote();
+}
+
+/* ============================================================
+   GAUGE
+   ============================================================ */
+function computeScore() {
+  var aiSum = 0, aiN = 0, hSum = 0, hN = 0;
+  activeFactorIds.forEach(function(fid) {
+    var f = factorMap[fid]; if (!f) return;
+    var v = values[fid] || 5;
+    if (f.direction === "ai") { aiSum += v; aiN++; }
+    else if (f.direction === "human") { hSum += v; hN++; }
+  });
+  if (aiN === 0 && hN === 0) return 50;
+  var aiAvg = aiN > 0 ? aiSum / aiN : 5;
+  var hAvg = hN > 0 ? hSum / hN : 5;
+  var raw = ((aiAvg - hAvg + 10) / 20) * 100;
+  return Math.max(0, Math.min(100, raw));
+}
+
+function updateGauge() {
+  var score = computeScore();
+  var info = zoneInfo(score);
+  var angle = -90 + (score / 100) * 180;
+  document.getElementById("gaugeArc").setAttribute("stroke-dasharray", (score / 100 * 377) + " 377");
+  document.getElementById("needleGroup").setAttribute("transform", "rotate(" + angle + ", 150, 150)");
+  document.getElementById("needleLine").setAttribute("stroke", info.color);
+  document.getElementById("needleDot").setAttribute("fill", info.color);
+  document.getElementById("scoreText").textContent = Math.round(score);
+  document.getElementById("zoneLabel").textContent = info.zone;
+  document.getElementById("zoneLabel").style.color = info.color;
+  document.getElementById("zoneDesc").textContent = info.desc;
+}
+
+/* ============================================================
+   SHANNON
+   ============================================================ */
+function updateShannon() {
+  var aiP = activeFactorIds.filter(function(fid) { return factorMap[fid] && factorMap[fid].direction === "ai"; });
+  var hP = activeFactorIds.filter(function(fid) { return factorMap[fid] && factorMap[fid].direction === "human"; });
+  var avgAi = aiP.length > 0 ? aiP.reduce(function(s,fid) { return s + (values[fid]||5); }, 0) / aiP.length : 5;
+  var avgH = hP.length > 0 ? hP.reduce(function(s,fid) { return s + (values[fid]||5); }, 0) / hP.length : 5;
+
+  document.getElementById("shannonAi").style.width = (avgAi * 10) + "%";
+  document.getElementById("shannonHuman").style.width = (avgH * 10) + "%";
+
+  var ratio = avgAi / Math.max(avgAi + avgH, 1);
+  var txt;
+  if (ratio > 0.55) txt = "AI efficiently explores the token space; your expertise shapes the signal. High information density through human-guided generation.";
+  else if (ratio < 0.45) txt = "The human element carries the signal. Authenticity, voice, and personal effort are the primary information carriers here.";
+  else txt = "A balanced exchange: AI provides the raw probability space, while human judgment selectively injects meaning into the final artifact.";
+  document.getElementById("shannonText").textContent = txt;
+}
+
+/* ============================================================
+   DISCUSSION PROMPTS
+   ============================================================ */
+function updateDiscussion() {
+  var body = document.getElementById("discussBody");
+  body.innerHTML = "";
+  if (!activePresetKey || !PRESETS[activePresetKey] || !PRESETS[activePresetKey].discuss) {
+    body.innerHTML = '<div class="discuss-empty">Select a scenario to see discussion prompts.</div>';
+    return;
+  }
+  PRESETS[activePresetKey].discuss.forEach(function(q) {
+    var div = document.createElement("div");
+    div.className = "discuss-q";
+    div.textContent = q;
+    body.appendChild(div);
+  });
+}
+
+function updateActiveNote() {
+  var note = document.getElementById("activeNote");
+  var artN = 0, creN = 0;
+  activeFactorIds.forEach(function(fid) {
+    var f = factorMap[fid]; if (!f) return;
+    if (f.domain === "artifact") artN++; else creN++;
+  });
+  var name = activePresetKey && PRESETS[activePresetKey] ? PRESETS[activePresetKey].name : "Custom";
+  note.innerHTML = '<strong>' + name + '</strong> — ' + artN + ' artifact + ' + creN + ' creator factors';
+}
+
+/* ============================================================
+   BUILD FACTORS REFERENCE TAB
+   ============================================================ */
+function buildFactorsTab() {
+  var artC = document.getElementById("factorsArtifact");
+  var creC = document.getElementById("factorsCreator");
+  ALL_FACTORS.forEach(function(f) {
+    var container = f.domain === "artifact" ? artC : creC;
+    var dirLabel = f.direction === "ai" ? "Favors AI" : f.direction === "human" ? "Favors Human" : "Contextual";
+    var item = document.createElement("div");
+    item.className = "factor-item";
+    item.innerHTML =
+      '<div class="factor-name">' + f.label +
+        ' <span class="factor-dir ' + f.direction + '">' + dirLabel + '</span>' +
+      '</div>' +
+      '<div class="factor-desc">' + f.desc + '</div>';
+    container.appendChild(item);
+  });
+}
+
+/* ============================================================
+   TAB SWITCHING
+   ============================================================ */
+document.querySelectorAll(".tab-btn").forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    document.querySelectorAll(".tab-content").forEach(function(tc) { tc.classList.remove("active"); });
+    document.getElementById("tab-" + btn.getAttribute("data-tab")).classList.add("active");
+  });
+});
+
+/* ============================================================
+   KEYBOARD NAV
+   ============================================================ */
+document.addEventListener("keydown", function(e) {
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    var idx = allPresetKeys.indexOf(activePresetKey);
+    if (e.key === "ArrowRight") idx = (idx + 1) % allPresetKeys.length;
+    else idx = (idx - 1 + allPresetKeys.length) % allPresetKeys.length;
+    loadPreset(allPresetKeys[idx]);
+  }
+});
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+document.getElementById("disclaimerBtn").addEventListener("click", function() {
+  document.getElementById("modalOverlay").classList.add("visible");
+});
+document.getElementById("modalClose").addEventListener("click", function() {
+  document.getElementById("modalOverlay").classList.remove("visible");
+});
+document.getElementById("modalOverlay").addEventListener("click", function(e) {
+  if (e.target === this) this.classList.remove("visible");
+});
+
+/* ============================================================
+   RESIZE
+   ============================================================ */
+var DESIGN_WIDTH = 1920, DESIGN_HEIGHT = 1080;
+function autoResize() {
+  var container = document.getElementById("viewportContainer");
+  var surface = document.getElementById("designSurface");
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var cw, ch;
+  if (vw / vh > 16 / 9) { ch = vh; cw = ch * (16 / 9); }
+  else { cw = vw; ch = cw * (9 / 16); }
+  container.style.width = cw + "px";
+  container.style.height = ch + "px";
+  surface.style.transform = "scale(" + (cw / DESIGN_WIDTH) + ")";
+}
+autoResize();
+var resizeTimeout;
+window.addEventListener("resize", function() {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(autoResize, 50);
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildCategoryChips();
+buildFactorsTab();
+selectCategory("rec");
+loadPreset("letterGoogle");
+</script>
+</body>
+</html>
